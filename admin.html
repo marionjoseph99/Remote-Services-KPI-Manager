@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>KPI Manager - Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* 30/70 split for the two cards; stacks on small screens */
+    .grid.ratio-30-70 {
+      grid-template-columns: 0.3fr 0.7fr;
+    }
+    @media (max-width: 1000px) {
+      .grid.ratio-30-70 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Circular progress styles */
+    .progress-tile {
+      display: flex;
+      flex-direction: row;           /* changed: horizontal layout */
+      align-items: center;
+      gap: 14px;                     /* spacing between circle and details */
+      text-align: left;              /* left-align details */
+    }
+    .circle-progress {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: conic-gradient(var(--accent) calc(var(--p) * 1%), #333 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+      flex: 0 0 auto;                /* don't stretch the circle */
+    }
+    .circle-inner {
+      position: absolute;
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .progress-meta {
+      margin: 0;                     /* changed: remove top margin for side-by-side */
+      font-size: 14px;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* Use more of the card's empty space */
+    #taskProgressTile { align-items: center; gap: 18px; }
+    #taskProgressTile .progress-meta { flex: 1; }
+
+    /* Default upsize */
+    #taskProgressTile .circle-progress {
+      width: 140px;   /* was 100px */
+      height: 140px;  /* was 100px */
+      font-size: 20px; /* center % */
+    }
+    #taskProgressTile .circle-inner {
+      width: 78%;
+      height: 78%;
+      font-size: 18px;
+    }
+
+    /* Extra-wide screens */
+    @media (min-width: 1440px) {
+      #taskProgressTile .circle-progress {
+        width: 180px;
+        height: 180px;
+        font-size: 24px;
+      }
+      #taskProgressTile .circle-inner {
+        width: 78%;
+        height: 78%;
+        font-size: 20px;
+      }
+    }
+
+    /* Compact on smaller screens */
+    @media (max-width: 900px) {
+      #taskProgressTile .circle-progress {
+        width: 110px;
+        height: 110px;
+        font-size: 18px;
+      }
+      #taskProgressTile .circle-inner {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="dot"></span>
+        <div class="title">KPI Manager</div>
+      </div>
+      <div class="nav">
+        <a href="#" id="btnOverview" class="active">Overview</a>
+        <button id="btnToggleAdv">Advanced Settings</button>
+        <button id="btn-logout" class="danger">Logout</button>
+      </div>
+
+      <div class="card" style="margin-top:auto;">
+        <div class="muted">Metrics Snapshot</div>
+        <div class="kpi" style="margin-top:8px;">
+          <div class="value" id="snapTargetTasks">per-position</div>
+          <div class="label">Target Tasks</div>
+        </div>
+        <div class="kpi">
+          <div class="value" id="snapAttendance">-</div>
+          <div class="label">Attendance Target</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="hamburger" id="toggleSidebar">☰ Menu</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span class="badge">Admin</span>
+          <input type="month" id="adminMonth" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
+        </div>
+      </div>
+
+      <!-- Overview content (shown by default) -->
+      <div id="overviewPanel">
+        <!-- Top 10 Agents card -->
+        <div class="card">
+          <h2>Top 10 Agents (Overall Performance)</h2>
+          <div class="muted">Month: <span id="top10Month"></span></div>
+          <table class="table" style="margin-top:8px;">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Client</th>
+                <th>Position</th>
+                <th>Tasks</th>
+                <th>Attendance</th>
+                <th>Attitude</th>
+                <th>Overall</th>
+              </tr>
+            </thead>
+            <tbody id="top10Table"></tbody>
+          </table>
+        </div>
+
+        <!-- CHANGE: use 30/70 layout -->
+        <div class="grid two ratio-30-70" style="margin-top:16px;">
+          <div class="card">
+            <h2>Agents by Client & Position</h2>
+            <div id="agentsList" class="list" style="margin-top:10px;"></div>
+          </div>
+
+          <div class="card">
+            <h2>Agent KPI Detail</h2>
+            <div class="muted" id="detailHeader">Select an agent to view KPIs.</div>
+            <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
+              <span class="badge">Name: <strong id="detailName" style="margin-left:6px;">-</strong></span>
+              <span class="badge">Client: <strong id="detailClient" style="margin-left:6px;">-</strong></span>
+              <span class="badge">Position: <strong id="detailPosition" style="margin-left:6px;">-</strong></span>
+            </div>
+
+            <!-- REPLACED: Progress tile in its own card + another card next to it -->
+            <div class="grid two" style="margin-top:12px;">
+              <div class="card">
+                <h3>Task Progress</h3>
+                <div class="progress-tile" id="taskProgressTile" style="margin-top:8px;">
+                  <div class="circle-progress" id="taskProgress" style="--p: 0;">
+                    <div class="circle-inner">
+                      <div id="taskProgressPct">0%</div>
+                    </div>
+                  </div>
+                  <div class="progress-meta">
+                    <div class="progress-title">This month</div>
+                    <div class="muted">Tasks: <span id="detailTotal">0</span></div>
+                    <div class="muted">Target: <span id="detailTarget">-</span> • Remaining: <span id="detailToTarget">-</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3>Summary</h3>
+                <!-- REPLACED: bar chart canvas for monthly daily totals -->
+                <canvas id="summaryBar" height="150" style="margin-top:8px;"></canvas>
+              </div>
+            </div>
+
+            <!-- Monthly Performance -->
+            <div class="grid two" style="margin-top:16px;">
+              <!-- Overall first -->
+              <div class="card">
+                <h3>Overall Performance</h3>
+                <div class="kpi">
+                  <div class="value" id="mpOverallPct">0%</div>
+                  <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
+                </div>
+                <button id="btnSaveKpi" class="btn" style="margin-top:10px;">Save KPI Scores</button>
+                <div id="saveKpiStatus" class="muted" style="margin-top:6px;"></div>
+              </div>
+
+              <!-- Task Created next -->
+              <div class="card">
+                <h3>Task Created</h3>
+                <div class="kpi">
+                  <div class="value" id="mpTaskPct">0%</div>
+                  <div class="label">vs monthly target</div>
+                </div>
+                <div class="muted" id="mpTaskMeta" style="margin-top:6px;">0 / 0</div>
+              </div>
+
+              <!-- Attendance -->
+              <div class="card">
+                <h3>Attendance</h3>
+                <div class="kpi">
+                  <div class="value" id="mpAttendancePct">0%</div>
+                  <div class="label">from points</div>
+                </div>
+                <div class="input" style="margin-top:8px;">
+                  <label for="inpAttendancePoints">Points (0-100)</label>
+                  <input id="inpAttendancePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 95" />
+                </div>
+              </div>
+
+              <!-- Attitude -->
+              <div class="card">
+                <h3>Attitude</h3>
+                <div class="kpi">
+                  <div class="value" id="mpAttitudePct">0%</div>
+                  <div class="label">from points</div>
+                </div>
+                <div class="input" style="margin-top:8px;">
+                  <label for="inpAttitudePoints">Points (0-100)</label>
+                  <input id="inpAttitudePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 90" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Daily entries -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+              <h3>Daily Entries</h3>
+              <input type="date" id="detailDay" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 6px 10px; border-radius: 10px;" />
+            </div>
+            <table class="table" style="margin-top:8px;">
+              <thead>
+                <tr><th>Time</th><th>Activity</th><th>Count</th><th>Difficulty</th></tr>
+              </thead>
+              <tbody id="detailEntries"></tbody>
+            </table>
+
+            <!-- Monthly entries -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
+              <h3>Monthly Entries</h3>
+            </div>
+            <table class="table" style="margin-top:8px;">
+              <thead>
+                <tr><th>Date</th><th>Time</th><th>Activity</th><th>Count</th><th>Difficulty</th></tr>
+              </thead>
+              <tbody id="detailMonthEntries"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Settings panel (toggle) -->
+      <div id="advPanel" class="card hidden" style="margin-top:16px;">
+        <h2>Advanced Settings</h2>
+        <p class="muted">Monthly target tasks per position</p>
+        <div id="posTargets" class="grid two" style="margin-top:10px;">
+          <div class="input"><label>CAD Drafter</label><input class="pos-target" data-pos="CAD Drafter" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>Data Entry Processor</label><input class="pos-target" data-pos="Data Entry Processor" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>Project Coordinator</label><input class="pos-target" data-pos="Project Coordinator" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>Residential Estimator</label><input class="pos-target" data-pos="Residential Estimator" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>Commercial Estimator</label><input class="pos-target" data-pos="Commercial Estimator" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>Appointment Setting Specialist</label><input class="pos-target" data-pos="Appointment Setting Specialist" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>Accounts Receivable Specialist</label><input class="pos-target" data-pos="Accounts Receivable Specialist" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>Accounts Payable Specialist</label><input class="pos-target" data-pos="Accounts Payable Specialist" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+          <div class="input"><label>CAD and Programming Lead</label><input class="pos-target" data-pos="CAD and Programming Lead" type="number" min="0" step="1" placeholder="e.g., 500" /></div>
+        </div>
+        <button id="btnSavePosTargets" class="btn" style="margin-top:12px;">Save Targets</button>
+        <div id="savePosStatus" class="muted" style="margin-top:8px;"></div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
+</html>

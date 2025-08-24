@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Moved — Agent Dashboard</title>
+  <meta http-equiv="refresh" content="0; url=./agent.html">
+  <script>window.location.replace('./agent.html');</script>
+</head>
+<body>
+  <!-- File renamed to agent.html -->
+  <p>If you are not redirected, <a href="./agent.html">click here</a>.</p>
+</body>
+</html>
+        <span class="dot"></span>
+        <div class="title">KPI Manager</div>
+      </div>
+      <div class="nav">
+        <a href="#" class="active">Dashboard</a>
+        <a href="#profile">Profile</a>
+        <button id="btn-logout" class="danger">Logout</button>
+      </div>
+      <div class="card" style="margin-top:auto;">
+        <div class="muted">Metrics Target</div>
+        <div class="kpi" style="margin-top:8px;">
+          <div class="value" id="targetTasks">-</div>
+          <div class="label">Target Tasks (Monthly)</div>
+        </div>
+        <div class="kpi">
+          <div class="value" id="attendanceTarget">-</div>
+          <div class="label">Attendance Target</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="hamburger" id="toggleSidebar">☰ Menu</button>
+        <div class="badge" id="welcomeBadge">Loading profile…</div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <h2>Submit Task</h2>
+          <p class="muted">Log activities to update your KPIs in real time.</p>
+          <div class="form-row" style="margin-top:10px;">
+            <div class="input">
+              <label for="activity">Activity name</label>
+              <input type="text" id="activity" placeholder="e.g., Calls handled" />
+            </div>
+            <div class="input">
+              <label for="count">Number completed</label>
+              <input type="number" id="count" min="1" step="1" placeholder="e.g., 10" />
+            </div>
+          </div>
+          <button id="btn-submit" class="btn" style="margin-top:12px;">Add Entry</button>
+          <div id="submitStatus" class="muted" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="card" id="profile">
+          <h2>Profile</h2>
+          <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
+            <span class="badge">Name: <strong id="profName" style="margin-left:6px;"></strong></span>
+            <span class="badge">Client: <strong id="profClient" style="margin-left:6px;"></strong></span>
+            <span class="badge">Position: <strong id="profPosition" style="margin-left:6px;"></strong></span>
+            <span class="badge">Role: <strong id="profRole" style="margin-left:6px;"></strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:16px;">
+        <div class="card">
+          <h2>Today's Activity</h2>
+          <div class="chart-wrap">
+            <canvas id="todayChart"></canvas>
+          </div>
+          <table class="table" style="margin-top:10px;">
+            <thead>
+              <tr><th>Time</th><th>Activity</th><th>Count</th></tr>
+            </thead>
+            <tbody id="todayTable"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2>Monthly Summary</h2>
+            <input type="month" id="monthPicker" class="input" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
+          </div>
+          <div style="display:flex; gap:18px; margin-top:8px; flex-wrap:wrap;">
+            <div class="kpi">
+              <div class="value" id="monthTotal">0</div>
+              <div class="label">Tasks this month</div>
+            </div>
+            <div class="kpi">
+              <div class="value" id="monthTargetGap">-</div>
+              <div class="label">To target</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="margin-top:10px;">
+            <canvas id="monthChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="./agent.js"></script>
+</body>
+</html>

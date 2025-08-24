@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>KPI Manager - Sign In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-wrap">
+    <div class="auth-split">
+      <aside class="auth-side">
+        <div class="side-content">
+          <h1>Welcome to Remote Services KPI Manager</h1>
+          <p class="muted">Track tasks, attendance, and performance in one place.</p>
+        </div>
+      </aside>
+
+      <div class="card auth-card">
+        <div class="brand" style="margin-bottom:16px;">
+          <span class="dot"></span>
+          <div class="title">Remote Services KPI Manager</div>
+        </div>
+
+        <div id="auth-forms">
+          <div id="login-form">
+            <h2>Welcome back, bhie!</h2>
+            <p class="muted">Sign in to continue</p>
+            <div class="input" style="margin-top:12px;">
+              <label for="login-email">Email</label>
+              <input id="login-email" type="email" placeholder="you@example.com" required />
+            </div>
+            <div class="input">
+              <label for="login-password">Password</label>
+              <input id="login-password" type="password" placeholder="••••••••" required />
+            </div>
+            <div class="input" style="margin-top:-6px; text-align:right;">
+              <a id="link-forgot" href="#" style="color: var(--accent); font-size: 12px;">Forgot password?</a>
+            </div>
+            <button id="btn-login" class="btn block">Sign In</button>
+            <div style="margin-top:10px; text-align:center; color: var(--muted);">
+              Bago ka dito 'te?
+              <a id="to-register" href="#" style="color: var(--accent)">Create an account</a>
+            </div>
+          </div>
+
+          <div id="register-form" class="hidden">
+            <h2>Create account</h2>
+
+            <div class="form-row" style="margin-top:12px;">
+              <div class="input">
+                <label for="reg-role">Role</label>
+                <select id="reg-role">
+                  <option value="agent" selected>Agent</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="input">
+                <label for="reg-name">Full name</label>
+                <input id="reg-name" type="text" placeholder="Jane Doe" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="input">
+                <label for="reg-email">Email</label>
+                <input id="reg-email" type="email" placeholder="you@example.com" required />
+              </div>
+              <div class="input">
+                <label for="reg-password">Password</label>
+                <input id="reg-password" type="password" placeholder="••••••••" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="input" id="wrap-client">
+                <label for="reg-client">Client</label>
+                <select id="reg-client" required>
+                  <option value="" disabled selected>Select client</option>
+                  <option value="KG Stevens">KG Stevens</option>
+                  <option value="McDermott">McDermott</option>
+                </select>
+              </div>
+              <div class="input" id="wrap-position">
+                <label for="reg-position">Position</label>
+                <select id="reg-position" required>
+                  <option value="" disabled selected>Select position</option>
+                  <option>CAD Drafter</option>
+                  <option>Data Entry Processor</option>
+                  <option>Project Coordinator</option>
+                  <option>Residential Estimator</option>
+                  <option>Commercial Estimator</option>
+                  <option>Appointment Setting Specialist</option>
+                  <option>Accounts Receivable Specialist</option>
+                  <option>Accounts Payable Specialist</option>
+                  <option>CAD and Programming Lead</option>
+                  <option value="Estimator (Residential/Commercial)">Estimator (Residential/Commercial)</option>
+                  <option value="Data Processor - Invoicing Clerk">Data Processor - Invoicing Clerk</option>
+                </select>
+              </div>
+            </div>
+            <button id="btn-register" class="btn block">Create Account</button>
+            <small id="reg-status" class="muted"></small>
+            <div style="margin-top:10px; text-align:center; color: var(--muted);">
+              Already have an account?
+              <a id="to-login" href="#" style="color: var(--accent)">Sign in</a>
+            </div>
+          </div>
+        </div>
+
+        <div id="auth-error" class="badge" style="display:none; margin-top:12px; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.12); color: #fff;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      auth, db,
+      onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+      doc, getDoc, setDoc, serverTimestamp
+    } from './firebase-config.js';
+
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const toRegister = document.getElementById('to-register');
+    const toLogin = document.getElementById('to-login');
+    const errorBox = document.getElementById('auth-error');
+    const showError = (msg) => {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'inline-flex';
+      setTimeout(() => (errorBox.style.display = 'none'), 6000);
+    };
+
+    // Lazy-load sendPasswordResetEmail from Firebase CDN and cache it
+    let __authMod = null;
+    async function getSendPasswordResetEmail() {
+      if (__authMod?.sendPasswordResetEmail) return __authMod.sendPasswordResetEmail;
+      __authMod = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+      return __authMod.sendPasswordResetEmail;
+    }
+
+    toRegister.addEventListener('click', (e) => {
+      e.preventDefault();
+      loginForm.classList.add('hidden');
+      registerForm.classList.remove('hidden');
+    });
+    toLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      registerForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+    });
+
+    // Role-based field toggling (uniform behavior)
+    const roleEl = document.getElementById('reg-role');
+    const wrapClient = document.getElementById('wrap-client');
+    const wrapPosition = document.getElementById('wrap-position');
+    const clientEl = document.getElementById('reg-client');
+    const positionEl = document.getElementById('reg-position');
+
+    const updateRoleFields = () => {
+      const isAdmin = roleEl.value === 'admin';
+      wrapClient.classList.toggle('hidden', isAdmin);
+      wrapPosition.classList.toggle('hidden', isAdmin);
+      // Toggle required for hidden fields to keep validation uniform
+      clientEl.required = !isAdmin;
+      positionEl.required = !isAdmin;
+      if (isAdmin) {
+        clientEl.value = '';
+        positionEl.value = '';
+      }
+    };
+    roleEl.addEventListener('change', updateRoleFields);
+    updateRoleFields();
+
+    document.getElementById('btn-register').addEventListener('click', async () => {
+      const name = (document.getElementById('reg-name')).value.trim();
+      const client = (document.getElementById('reg-client')).value.trim();
+      const position = (document.getElementById('reg-position')).value;
+      const role = (document.getElementById('reg-role')).value;
+      const email = (document.getElementById('reg-email')).value.trim();
+      const password = (document.getElementById('reg-password')).value;
+
+      if (!name || !email || !password) return showError('Please fill name, email and password.');
+      if (role === 'agent' && (!client || !position)) return showError('Please select client and position for Agent.');
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const profile = {
+          name,
+          role,
+          email,
+          // Duplicate into nested profile to satisfy Firestore rules
+          profile: { role },
+          createdAt: serverTimestamp()
+        };
+        if (role === 'agent') {
+          profile.client = client;
+          profile.position = position;
+          // Optional: also include in nested profile for consistency
+          profile.profile.client = client;
+          profile.profile.position = position;
+        }
+        await setDoc(doc(db, 'users', cred.user.uid), profile, { merge: true });
+        window.location.href = role === 'admin' ? './admin.html' : './agent.html';
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    document.getElementById('btn-login').addEventListener('click', async () => {
+      const email = (document.getElementById('login-email')).value.trim();
+      const password = (document.getElementById('login-password')).value;
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const usnap = await getDoc(doc(db, 'users', cred.user.uid));
+        const u = usnap.data() || {};
+        const role = u.role || u.profile?.role || 'agent';
+        window.location.href = role === 'admin' ? './admin.html' : './agent.html';
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    // New: forgot password handler (uses lazy-loaded function)
+    const forgotLink = document.getElementById('link-forgot');
+    forgotLink?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById('login-email')).value.trim();
+      if (!email) {
+        showError('Enter your email above, then click “Forgot password?”');
+        return;
+      }
+      try {
+        const sendReset = await getSendPasswordResetEmail();
+        await sendReset(auth, email);
+        showError('Password reset email sent. Check your inbox.');
+      } catch (err) {
+        showError(err.message || 'Unable to send reset email.');
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      try {
+        const usnap = await getDoc(doc(db, 'users', user.uid));
+        const u = usnap.data() || {};
+        const role = u.role || u.profile?.role || 'agent';
+        window.location.href = role === 'admin' ? './admin.html' : './agent.html';
+      } catch {
+        window.location.href = './agent.html';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>KPI Manager - Agent Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Flatpickr base CSS and monthSelect plugin CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+</head>
+<body class="agent-page">
+  <div class="container">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="dot"></span>
+        <div class="title">KPI Manager</div>
+      </div>
+      <div class="nav">
+        <a href="#" class="active">Dashboard</a>
+        <a href="#profile">Profile</a>
+        <button id="btn-logout" class="danger">Logout</button>
+      </div>
+      <div class="card" style="margin-top:auto;">
+        <div class="muted">Metrics Target</div>
+        <div class="kpi" style="margin-top:8px;">
+          <div class="value" id="targetTasks">-</div>
+          <div class="label">Target Tasks (Monthly)</div>
+        </div>
+        <div class="kpi">
+          <div class="value" id="attendanceTarget">-</div>
+          <div class="label">Attendance Target</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="hamburger" id="toggleSidebar">☰ Menu</button>
+        <div class="badge hidden" id="welcomeBadge">Loading profile…</div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <h2>Submit Task</h2>
+          <p class="muted">Log activities to update your KPIs in real time.</p>
+          <div class="form-row" style="margin-top:10px;">
+            <div class="input">
+              <label for="activity">Activity name</label>
+              <input type="text" id="activity" placeholder="e.g., Calls handled" />
+            </div>
+            <div class="input">
+              <label for="count">Number completed</label>
+              <input type="number" id="count" min="1" step="1" placeholder="e.g., 10" />
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:10px;">
+            <div class="input">
+              <label for="difficulty">Difficulty</label>
+              <select id="difficulty" required>
+                <option value="" disabled selected>Select difficulty</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div class="input">
+              <!-- spacer to keep grid uniform -->
+              <label style="visibility:hidden;">Spacer</label>
+              <div></div>
+            </div>
+          </div>
+          <button id="btn-submit" class="btn" style="margin-top:12px;">Add Entry</button>
+          <div id="submitStatus" class="muted" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="card" id="profile">
+          <h2>Profile</h2>
+          <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
+            <span class="badge">Name: <strong id="profName" style="margin-left:6px;"></strong></span>
+            <span class="badge">Client: <strong id="profClient" style="margin-left:6px;"></strong></span>
+            <span class="badge">Position: <strong id="profPosition" style="margin-left:6px;"></strong></span>
+            <span class="badge">Role: <strong id="profRole" style="margin-left:6px;"></strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:16px;">
+        <div class="card">
+          <!-- CHANGED: header now includes a day picker -->
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2>Today's Activity</h2>
+            <input type="date" id="todayDay" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 6px 10px; border-radius: 10px;" />
+          </div>
+          <table class="table" style="margin-top:10px;">
+            <thead>
+              <!-- CHANGED: add Actions column -->
+              <tr><th>Time</th><th>Activity</th><th>Count</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="todayTable"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2>Monthly Entries</h2>
+            <input type="month" id="monthPicker" class="input" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
+          </div>
+          <table class="table" style="margin-top:10px;">
+            <thead>
+              <tr><th>Date</th><th>Time</th><th>Activity</th><th>Count</th><th>Difficulty</th></tr>
+            </thead>
+            <tbody id="monthTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="./agent.js"></script>
+  <!-- Flatpickr core + monthSelect plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+
+  <script type="module">
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp } from './firebase-config.js';
+    function setAgentGreeting(name) {
+      const txt = `Hello, ${name || 'Agent'}`;
+      const sidebar = document.querySelector('.sidebar');
+      const brand = sidebar?.querySelector('.brand');
+
+      // Reuse or create the sidebar greeting badge
+      let el = document.getElementById('agentGreeting');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'agentGreeting';
+        el.className = 'badge';
+      }
+      el.textContent = txt;
+
+      if (sidebar && brand) {
+        // Place directly under the brand in the left panel
+        el.style.margin = '8px 0 0 0';
+        el.style.marginLeft = '0';
+        sidebar.insertBefore(el, brand.nextSibling);
+        // Hide any old topbar badge
+        document.getElementById('welcomeBadge')?.classList.add('hidden');
+      } else {
+        // Fallback: place in the topbar
+        const host = document.querySelector('.topbar') || document.querySelector('.main') || document.body;
+        el.style.marginLeft = 'auto';
+        el.style.alignSelf = 'center';
+        if (!host.contains(el)) host.appendChild(el);
+      }
+    }
+
+    // Helpers
+    const pad = (n) => String(n).padStart(2, '0');
+    const toDayId = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    // NEW: robust millis converter used by render/edit/delete
+    const toMillisAny = (v) => {
+      if (!v && v !== 0) return 0;
+      if (typeof v?.toMillis === 'function') return v.toMillis();   // Firestore Timestamp
+      if (v instanceof Date) return v.getTime();                    // Date
+      if (typeof v === 'number') return v;                          // epoch ms
+      if (typeof v === 'string') return Date.parse(v) || 0;         // ISO
+      if (typeof v === 'object' && typeof v.seconds === 'number') { // {seconds,nanoseconds}
+        return v.seconds * 1000 + Math.floor((v.nanoseconds || 0) / 1e6);
+      }
+      return 0;
+    };
+
+    // Keep track of edit state
+    let editEntryKey = null;   // epoch ms used as key
+    let editEntryDay = null;   // dayId being edited
+
+    // Helper: ensure a Cancel button next to submit
+    function ensureCancelEditButton() {
+      const submitBtn = document.getElementById('btn-submit');
+      if (!submitBtn) return null;
+      let cancelBtn = document.getElementById('btn-cancel-edit');
+      if (!cancelBtn) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.id = 'btn-cancel-edit';
+        cancelBtn.className = 'btn secondary';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.marginLeft = '8px';
+        cancelBtn.style.display = 'none';
+        submitBtn.after(cancelBtn);
+      }
+      return cancelBtn;
+    }
+
+    function enterEditMode(entry, dayId) {
+      const activityEl = document.getElementById('activity');
+      const countEl = document.getElementById('count');
+      const difficultyEl = document.getElementById('difficulty');
+      const submitBtn = document.getElementById('btn-submit');
+      const cancelBtn = ensureCancelEditButton();
+
+      activityEl.value = entry.activity || '';
+      countEl.value = Number(entry.count || 0);
+      if (difficultyEl) difficultyEl.value = entry.difficulty || '';
+      submitBtn.textContent = 'Update Entry';
+      if (cancelBtn) cancelBtn.style.display = '';
+      editEntryKey = entry._keyMs; // normalized ms key
+      editEntryDay = dayId;
+    }
+
+    function exitEditMode() {
+      const submitBtn = document.getElementById('btn-submit');
+      const cancelBtn = document.getElementById('btn-cancel-edit');
+      if (submitBtn) submitBtn.textContent = 'Add Entry';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      editEntryKey = null;
+      editEntryDay = null;
+    }
+
+    async function renderToday(uid, dayId) {
+      const tbody = document.getElementById('todayTable');
+      if (!tbody) return;
+      try {
+        const snap = await getDoc(doc(db, 'users', uid, 'tasks', dayId));
+        const data = snap.exists() ? snap.data() : {};
+        const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+        entries.forEach(e => (e._keyMs = toMillisAny(e.createdAt ?? e.createdAtMs)));
+        // newest first
+        entries.sort((a, b) => b._keyMs - a._keyMs);
+        tbody.innerHTML = entries.length
+          ? entries.map(e => {
+              const ts = new Date(e._keyMs || Date.now());
+              const hh = String(ts.getHours()).padStart(2, '0');
+              const mm = String(ts.getMinutes()).padStart(2, '0');
+              return `
+                <tr data-key="${e._keyMs}">
+                  <td>${hh}:${mm}</td>
+                  <td>${e.activity || '-'}</td>
+                  <td>${Number(e.count || 0)}</td>
+                  <td>
+                    <button class="btn secondary" data-action="edit" data-key="${e._keyMs}" style="padding:4px 8px;">Edit</button>
+                    <button class="btn secondary" data-action="delete" data-key="${e._keyMs}" style="padding:4px 8px; margin-left:6px;">Delete</button>
+                  </td>
+                </tr>`;
+            }).join('')
+          : `<tr><td colspan="4" class="muted">No entries for ${dayId}.</td></tr>`;
+      } catch (e) {
+        console.error('renderToday failed:', e); /* NEW: log actual error */
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">Unable to load entries.</td></tr>`;
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = './index.html';
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const data = snap.data() || {};
+        const name = data.name || user.displayName || 'Agent';
+        setAgentGreeting(name);
+      } catch {
+        setAgentGreeting('Agent');
+      }
+
+      // Init day picker + first render
+      const inp = document.getElementById('todayDay');
+      if (inp) {
+        const today = new Date();
+        if (!inp.value) inp.value = toDayId(today);
+        renderToday(user.uid, inp.value);
+        inp.addEventListener('change', () => {
+          if (inp.value) {
+            exitEditMode();
+            renderToday(user.uid, inp.value);
+          }
+        });
+      }
+
+      // Hook table click for edit/delete (event delegation)
+      const todayTable = document.getElementById('todayTable');
+      if (todayTable) {
+        todayTable.addEventListener('click', async (ev) => {
+          const btn = ev.target.closest('[data-action]');
+          if (!btn) return;
+          const action = btn.dataset.action;
+          const key = Number(btn.dataset.key || '0');
+          const dayId = document.getElementById('todayDay')?.value;
+          if (!dayId || !Number.isFinite(key)) return;
+
+          const ref = doc(db, 'users', user.uid, 'tasks', dayId);
+          const snap = await getDoc(ref);
+          const data = snap.exists() ? snap.data() : {};
+          const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+          entries.forEach(e => (e._keyMs = toMillisAny(e.createdAt ?? e.createdAtMs)));
+          const idx = entries.findIndex(e => e._keyMs === key);
+          if (idx < 0) return;
+
+          if (action === 'edit') {
+            enterEditMode(entries[idx], dayId);
+          } else if (action === 'delete') {
+            if (!confirm('Delete this entry?')) return;
+            entries.splice(idx, 1);
+            const total = entries.reduce((s, e) => s + Number(e.count || 0), 0);
+            await setDoc(ref, {
+              date: dayId,
+              month: dayId.slice(0,7),
+              total,
+              entries: entries.map(({ _keyMs, ...rest }) => rest), // strip helper
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+            // If deleting the one being edited, exit edit mode
+            if (editEntryKey === key && editEntryDay === dayId) exitEditMode();
+            renderToday(user.uid, dayId);
+          }
+        });
+      }
+
+      // Intercept submit to save entry on the selected day (create or update)
+      const submitBtn = document.getElementById('btn-submit');
+      if (submitBtn && !submitBtn.dataset.dayPatch) {
+        submitBtn.dataset.dayPatch = '1';
+        ensureCancelEditButton()?.addEventListener('click', (e) => {
+          e.preventDefault();
+          exitEditMode();
+        });
+
+        submitBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
+          const status = document.getElementById('submitStatus');
+          const activityEl = document.getElementById('activity');
+          const countEl = document.getElementById('count');
+          const difficultyEl = document.getElementById('difficulty');
+          const dayEl = document.getElementById('todayDay');
+
+          const activity = (activityEl?.value || '').trim();
+          const count = Math.max(1, Math.floor(Number(countEl?.value || 0)));
+          const difficulty = difficultyEl?.value || '';
+          const dayId = dayEl?.value;
+          const monthId = dayId?.slice(0, 7);
+
+          if (!activity || !count || !difficulty || !dayId) {
+            if (status) status.textContent = 'Fill all fields.';
+            return;
+          }
+
+          submitBtn.disabled = true;
+          if (status) status.textContent = editEntryKey ? 'Updating...' : 'Saving...';
+          try {
+            const ref = doc(db, 'users', user.uid, 'tasks', dayId);
+            const snap = await getDoc(ref);
+            const data = snap.exists() ? snap.data() : {};
+            const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+
+            if (editEntryKey && editEntryDay === dayId) {
+              // Update existing entry matched by createdAt ms
+              let changed = false;
+              for (let i = 0; i < entries.length; i++) {
+                const keyMs = toMillisAny(entries[i].createdAt ?? entries[i].createdAtMs);
+                if (keyMs === editEntryKey) {
+                  entries[i] = {
+                    ...entries[i],
+                    activity,
+                    count,
+                    difficulty
+                    // keep createdAt as-is
+                  };
+                  changed = true;
+                  break;
+                }
+              }
+              if (!changed) {
+                // If not found (edge case), treat as new insert
+                entries.push({ activity, count, difficulty, createdAt: Date.now() });
+              }
+            } else {
+              // New insert
+              entries.push({ activity, count, difficulty, createdAt: Date.now() });
+            }
+
+            // NEW: strip UI helper before saving and compute total from sanitized list
+            const sanitized = entries.map(({ _keyMs, ...rest }) => rest);
+            const total = sanitized.reduce((s, e) => s + Number(e.count || 0), 0);
+
+            await setDoc(ref, {
+              date: dayId,
+              month: monthId,
+              total,
+              entries: sanitized,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+
+            if (status) status.textContent = editEntryKey ? 'Updated.' : 'Saved.';
+            setTimeout(() => { if (status) status.textContent = ''; }, 1200);
+
+            // Refresh the selected day’s table
+            renderToday(user.uid, dayId);
+
+            // Reset edit mode (and clear count only for convenience)
+            exitEditMode();
+            if (countEl) countEl.value = '';
+          } catch (err) {
+            if (status) status.textContent = err?.message || 'Error saving.';
+          } finally {
+            submitBtn.disabled = false;
+          }
+        }, { capture: true });
+      }
+
+      // Initialize month calendar with Flatpickr month grid
+      const mp = document.getElementById('monthPicker');
+      if (mp) {
+        if (mp.type !== 'text') mp.type = 'text'; // prevent native month UI
+        window.flatpickr(mp, {
+          plugins: [window.monthSelectPlugin({ shorthand: true, dateFormat: 'Y-m' })],
+          defaultDate: mp.value || null,
+          onChange: (dates, str) => {
+            mp.value = str;
+            mp.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
