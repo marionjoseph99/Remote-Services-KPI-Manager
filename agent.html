@@ -5,10 +5,138 @@
   <title>KPI Manager - Agent Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="icon" type="image/png" href="logo.png" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <!-- Flatpickr base CSS and monthSelect plugin CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <!-- NEW: official dark theme to match original calendar look -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+  <style>
+    /* Flat background overrides: remove gradients on surfaces */
+    body.agent-page,
+    .main,
+    .sidebar,
+    .topbar,
+    .card {
+      background-color: var(--card, var(--panel));
+      background-image: none !important;
+    }
+
+    /* Seamless page gradient (keeps cards/panels flat) */
+    body.agent-page {
+      background: linear-gradient(180deg, #0e1220 0%, #0b0f1c 50%, #0a0d18 100%) !important;
+      background-attachment: fixed;
+    }
+
+    /* Pin logout at the very bottom of the sidebar */
+    .sidebar { display: flex; flex-direction: column; }
+    .sidebar .nav { display: flex; flex-direction: column; gap: 8px; }
+    .sidebar-spacer { flex: 1 1 auto; }
+
+    /* Logout button: same look as admin */
+    #btn-logout {
+      align-self: stretch;
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius, 10px);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--danger, #ef4444);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      box-shadow: var(--shadow, none);
+      background-image: none !important;
+      transition: background-color .15s ease, transform .05s ease;
+    }
+    #btn-logout:hover { background: var(--danger-hover, #f05252); }
+    #btn-logout:active { transform: translateY(1px); }
+    #btn-logout:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* NEW: Base font styles */
+    :root { --font-sans: 'Lexend', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; }
+    html, body { font-family: var(--font-sans); }
+    button, input, select, textarea { font-family: inherit; }
+
+    /* Task Progress ring (lightweight copy) */
+    .progress-tile { display:flex; align-items:center; gap:14px; text-align:left; }
+    .circle-progress {
+      position: relative; width: 110px; height: 110px; border-radius: 50%;
+      background: conic-gradient(var(--accent) calc(var(--p, 0) * 1%), #333 0);
+      display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;
+    }
+    .circle-inner {
+      position:absolute; width: 78%; height:78%; border-radius:50%; background: var(--panel);
+      display:flex; align-items:center; justify-content:center; font-size:16px;
+    }
+    .progress-meta { display:flex; flex-direction:column; gap:2px; font-size:14px; color: var(--text); }
+
+    /* Add a four-column grid for the KPI overview row */
+    .grid.four {
+      display: grid;
+      grid-template-columns: 1fr 1.7fr 0.8fr 0.8fr; /* Make summary wider, last two smaller */
+      gap: 18px;
+      width: 100%;
+    }
+
+    /* Prevent Task Progress and Summary cards from expanding in height */
+    .grid.four > .card {
+      height: 220px;
+      max-height: 220px;
+      min-height: 220px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Prevent the summary chart from expanding */
+    #agSummaryBar {
+      height: 140px !important;
+      max-height: 140px !important;
+      min-height: 140px !important;
+      /* Prevent resizing */
+      resize: none;
+      display: block;
+    }
+    /* Prevent Task Progress ring from overflowing */
+    #agTaskProgressTile {
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    /* Add margin and fixed height + scroll for activity/entries containers */
+    .grid.two > .card {
+      margin-top: 18px;
+      height: 420px;
+      max-height: 420px;
+      min-height: 420px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Table scroll region for both tables */
+    #todayTable, #monthTable {
+      display: block;
+      max-height: 320px;
+      min-height: 320px;
+      overflow-y: auto;
+      width: 100%;
+    }
+    /* Ensure table header stays visible */
+    .table thead, .table tr {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+    .table tbody {
+      display: block;
+      width: 100%;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="agent-page">
   <div class="container">
@@ -18,21 +146,13 @@
         <div class="title">KPI Manager</div>
       </div>
       <div class="nav">
-        <a href="#" class="active">Dashboard</a>
-        <a href="#profile">Profile</a>
-        <button id="btn-logout" class="danger">Logout</button>
+        <a href="#" id="navDashboard" class="active">Dashboard</a>
+        <a href="#" id="navProfile">Profile</a>
       </div>
-      <div class="card" style="margin-top:auto;">
-        <div class="muted">Metrics Target</div>
-        <div class="kpi" style="margin-top:8px;">
-          <div class="value" id="targetTasks">-</div>
-          <div class="label">Target Tasks (Monthly)</div>
-        </div>
-        <div class="kpi">
-          <div class="value" id="attendanceTarget">-</div>
-          <div class="label">Attendance Target</div>
-        </div>
-      </div>
+
+      <!-- Ensure spacer + styled logout button at the very bottom -->
+      <div class="sidebar-spacer"></div>
+      <button id="btn-logout" class="btn danger">Logout</button>
     </aside>
 
     <main class="main">
@@ -41,78 +161,138 @@
         <div class="badge hidden" id="welcomeBadge">Loading profile…</div>
       </div>
 
-      <div class="grid two">
-        <div class="card">
-          <h2>Submit Task</h2>
-          <p class="muted">Log activities to update your KPIs in real time.</p>
-          <div class="form-row" style="margin-top:10px;">
-            <div class="input">
-              <label for="activity">Activity name</label>
-              <input type="text" id="activity" placeholder="e.g., Calls handled" />
-            </div>
-            <div class="input">
-              <label for="count">Number completed</label>
-              <input type="number" id="count" min="1" step="1" placeholder="e.g., 10" />
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:10px;">
-            <div class="input">
-              <label for="difficulty">Difficulty</label>
-              <select id="difficulty" required>
-                <option value="" disabled selected>Select difficulty</option>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-            </div>
-            <div class="input">
-              <!-- spacer to keep grid uniform -->
-              <label style="visibility:hidden;">Spacer</label>
-              <div></div>
+      <!-- NEW: Dashboard view wrapper -->
+      <div id="dashboardPanel">
+        <!-- NEW: KPI Overview - now in a single row -->
+        <div class="grid four" style="margin-top:12px;">
+          <div class="card">
+            <h2>Task Progress</h2>
+            <div class="progress-tile" id="agTaskProgressTile" style="margin-top:8px;">
+              <div class="circle-progress" id="agTaskProgress" style="--p: 0;">
+                <div class="circle-inner">
+                  <div id="agTaskProgressPct">0%</div>
+                </div>
+              </div>
+              <div class="progress-meta">
+                <div class="progress-title">This month</div>
+                <div class="muted">Tasks: <span id="agDetailTotal">0</span></div>
+                <div class="muted">Target: <span id="agDetailTarget">-</span> • Remaining: <span id="agDetailToTarget">-</span></div>
+              </div>
             </div>
           </div>
-          <button id="btn-submit" class="btn" style="margin-top:12px;">Add Entry</button>
-          <div id="submitStatus" class="muted" style="margin-top:8px;"></div>
+
+          <div class="card">
+            <h2>Summary</h2>
+            <canvas id="agSummaryBar" style="margin-top:8px;"></canvas>
+          </div>
+
+          <div class="card">
+            <h2>Overall Performance</h2>
+            <div class="kpi">
+              <div class="value" id="agOverallPct">0%</div>
+              <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Task Created</h2>
+            <div class="kpi">
+              <div class="value" id="agTaskPct">0%</div>
+              <div class="label">vs monthly target</div>
+            </div>
+            <div class="muted" id="agTaskMeta" style="margin-top:6px;">0 / 0</div>
+          </div>
         </div>
 
-        <div class="card" id="profile">
-          <h2>Profile</h2>
-          <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
-            <span class="badge">Name: <strong id="profName" style="margin-left:6px;"></strong></span>
-            <span class="badge">Client: <strong id="profClient" style="margin-left:6px;"></strong></span>
-            <span class="badge">Position: <strong id="profPosition" style="margin-left:6px;"></strong></span>
-            <span class="badge">Role: <strong id="profRole" style="margin-left:6px;"></strong></span>
+        <!-- Remove duplicate Overall Performance and Task Created cards below -->
+        <!--
+        <div class="grid two" style="margin-top:16px;">
+          <div class="card">
+            <h2>Overall Performance</h2>
+            <div class="kpi">
+              <div class="value" id="agOverallPct">0%</div>
+              <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Task Created</h2>
+            <div class="kpi">
+              <div class="value" id="agTaskPct">0%</div>
+              <div class="label">vs monthly target</div>
+            </div>
+            <div class="muted" id="agTaskMeta" style="margin-top:6px;">0 / 0</div>
+          </div>
+        </div>
+        -->
+
+        <div class="grid three" style="display:grid; grid-template-columns: 0.7fr 1.3fr 1.3fr; gap:18px; margin-top:18px;">
+          <!-- Submit Task container -->
+          <div class="card" style="max-width:320px; min-width:220px; flex: 0 0 260px;">
+            <h2>Submit Task</h2>
+            <p class="muted">Log activities to update your KPIs in real time.</p>
+            <div class="form-row" style="margin-top:10px; flex-direction:column; gap:14px; display:flex;">
+              <div class="input">
+                <label for="activity">Activity name</label>
+                <input type="text" id="activity" placeholder="e.g., Calls handled" />
+              </div>
+              <div class="input">
+                <label for="count">Number completed</label>
+                <input type="number" id="count" min="1" step="1" placeholder="e.g., 10" />
+              </div>
+              <div class="input">
+                <label for="difficulty">Difficulty</label>
+                <select id="difficulty" required>
+                  <option value="" disabled selected>Select difficulty</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+            <button id="btn-submit" class="btn" style="margin-top:16px;">Add Entry</button>
+            <div id="submitStatus" class="muted" style="margin-top:8px;"></div>
+          </div>
+
+          <!-- Today's Activity container -->
+          <div class="card">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <h2>Today's Activity</h2>
+              <input type="date" id="todayDay" class="input" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
+            </div>
+            <table class="table" style="margin-top:10px;">
+              <thead>
+                <tr><th>Time</th><th>Activity</th><th>Count</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="todayTable"></tbody>
+            </table>
+          </div>
+
+          <!-- Monthly Entries container -->
+          <div class="card">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <h2>Monthly Entries</h2>
+              <input type="month" id="monthPicker" class="input" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
+            </div>
+            <table class="table" style="margin-top:10px;">
+              <thead>
+                <tr><th>Date</th><th>Time</th><th>Activity</th><th>Count</th><th>Difficulty</th></tr>
+              </thead>
+              <tbody id="monthTable"></tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <div class="grid two" style="margin-top:16px;">
-        <div class="card">
-          <!-- CHANGED: header now includes a day picker -->
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <h2>Today's Activity</h2>
-            <input type="date" id="todayDay" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 6px 10px; border-radius: 10px;" />
-          </div>
-          <table class="table" style="margin-top:10px;">
-            <thead>
-              <!-- CHANGED: add Actions column -->
-              <tr><th>Time</th><th>Activity</th><th>Count</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="todayTable"></tbody>
-          </table>
-        </div>
-
-        <div class="card">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <h2>Monthly Entries</h2>
-            <input type="month" id="monthPicker" class="input" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
-          </div>
-          <table class="table" style="margin-top:10px;">
-            <thead>
-              <tr><th>Date</th><th>Time</th><th>Activity</th><th>Count</th><th>Difficulty</th></tr>
-            </thead>
-            <tbody id="monthTable"></tbody>
-          </table>
+      <!-- NEW: Profile view wrapper (hidden by default) -->
+      <div id="profilePanel" class="card hidden" style="margin-top:16px;">
+        <h2>Your Profile</h2>
+        <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
+          <span class="badge">Name: <strong id="profName" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Email: <strong id="profEmail" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Client: <strong id="profClient" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Position: <strong id="profPosition" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Role: <strong id="profRole" style="margin-left:6px;">-</strong></span>
         </div>
       </div>
     </main>
@@ -124,7 +304,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 
   <script type="module">
-    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp } from './firebase-config.js';
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp, getDocs, collection, query, where } from './firebase-config.js';
     function setAgentGreeting(name) {
       const txt = `Hello, ${name || 'Agent'}`;
       const sidebar = document.querySelector('.sidebar');
@@ -228,8 +408,9 @@
         entries.forEach(e => (e._keyMs = toMillisAny(e.createdAt ?? e.createdAtMs)));
         // newest first
         entries.sort((a, b) => b._keyMs - a._keyMs);
-        tbody.innerHTML = entries.length
-          ? entries.map(e => {
+        const showEntries = entries.slice(0, 10); // Only show 10
+        tbody.innerHTML = showEntries.length
+          ? showEntries.map(e => {
               const ts = new Date(e._keyMs || Date.now());
               const hh = String(ts.getHours()).padStart(2, '0');
               const mm = String(ts.getMinutes()).padStart(2, '0');
@@ -246,9 +427,166 @@
             }).join('')
           : `<tr><td colspan="4" class="muted">No entries for ${dayId}.</td></tr>`;
       } catch (e) {
-        console.error('renderToday failed:', e); /* NEW: log actual error */
+        console.error('renderToday failed:', e);
         tbody.innerHTML = `<tr><td colspan="4" class="muted">Unable to load entries.</td></tr>`;
       }
+    }
+
+    // NEW: agent KPI state + helpers
+    let agentProfile = null;
+    let agSummaryChart = null;
+    let perfWeights = { task: 50, attendance: 30, attitude: 20 };
+    let positionTargets = null;
+
+    const monthIdNow = () => {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+    };
+
+    async function ensureMetricsAndTargets() {
+      if (!positionTargets) {
+        const tSnap = await getDoc(doc(db, 'targets', 'positions'));
+        positionTargets = tSnap.exists() ? tSnap.data() : {};
+      }
+      // Pull dynamic weights
+      const mSnap = await getDoc(doc(db, 'settings', 'metrics'));
+      if (mSnap.exists()) {
+        const w = mSnap.data().weights || {};
+        const t = Number.isFinite(w.task) ? w.task : 50;
+        const a = Number.isFinite(w.attendance) ? w.attendance : 30;
+        const d = Number.isFinite(w.attitude) ? w.attitude : 20;
+        perfWeights = { task: t, attendance: a, attitude: d };
+      }
+    }
+
+    // NEW: draw Summary bar for agent
+    function drawAgSummaryBar(dayTotals) {
+      const canvas = document.getElementById('agSummaryBar');
+      if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const days = Object.keys(dayTotals || {}).sort();
+      const labels = days; // use dates as labels
+      const data = days.map(d => Number(dayTotals[d] || 0));
+
+      try {
+        if (agSummaryChart) agSummaryChart.destroy();
+        agSummaryChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Tasks per day',
+              data,
+              backgroundColor: 'rgba(167,139,250,0.35)',
+              borderColor: 'rgba(167,139,250,0.9)',
+              borderWidth: 1,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  title: (items) => items?.[0]?.label || '',
+                  label: (it) => `Tasks: ${it.parsed?.y ?? 0}`
+                }
+              }
+            },
+            scales: {
+              x: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.06)' } },
+              y: { beginAtZero: true, ticks: { color: '#c7c9d3' }, grid: { color: 'rgba(255,255,255,0.06)' } }
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Agent Summary bar render skipped:', err);
+      }
+    }
+
+    // NEW: update task ring UI
+    function updateTaskRing(pct) {
+      const ring = document.getElementById('agTaskProgress');
+      const label = document.getElementById('agTaskProgressPct');
+      if (ring) ring.style.setProperty('--p', Math.max(0, Math.min(100, pct)));
+      if (label) label.textContent = `${Math.round(Math.max(0, Math.min(100, pct)))}%`;
+    }
+
+    // NEW: clamp helper
+    const clampPct = (n) => Math.min(100, Math.max(0, n));
+
+    // NEW: recompute and render all KPIs for selected month
+    async function recomputeAgentKpis(uid, monthId) {
+      await ensureMetricsAndTargets();
+      // Sum month totals + build per-day map
+      const daysRef = collection(db, 'users', uid, 'tasks');
+      const qy = query(daysRef, where('month', '==', monthId));
+      const snapDays = await getDocs(qy);
+      const dayTotals = {};
+      let totalTasks = 0;
+      snapDays.forEach(d => {
+        const data = d.data() || {};
+        const dt = data.date || d.id;
+        const t = Number(data.total || 0);
+        if (dt) dayTotals[dt] = t;
+        totalTasks += t;
+      });
+
+      // Target by position
+      const pos = agentProfile?.position || '';
+      const target = Number(positionTargets?.[pos] || 0);
+      const remaining = target ? Math.max(0, target - totalTasks) : 0;
+      const taskPct = target > 0 ? clampPct((totalTasks / target) * 100) : 0;
+
+      // Update Task Progress + Task Created
+      const fmt = (n) => (Number.isFinite(n) ? n.toLocaleString() : '0');
+      const elTotal = document.getElementById('agDetailTotal');
+      const elTarget = document.getElementById('agDetailTarget');
+      const elRemain = document.getElementById('agDetailToTarget');
+      if (elTotal) elTotal.textContent = fmt(totalTasks);
+      if (elTarget) elTarget.textContent = target ? fmt(target) : '-';
+      if (elRemain) elRemain.textContent = target ? fmt(remaining) : '-';
+      updateTaskRing(taskPct);
+      const agTaskPct = document.getElementById('agTaskPct');
+      const agTaskMeta = document.getElementById('agTaskMeta');
+      if (agTaskPct) agTaskPct.textContent = `${Math.round(taskPct)}%`;
+      if (agTaskMeta) agTaskMeta.textContent = `${fmt(totalTasks)} / ${fmt(target)}`;
+
+      // Attendance/Attitude from KPI doc if present
+      const kpiSnap = await getDoc(doc(db, 'users', uid, 'kpi', monthId));
+      const kpi = kpiSnap.exists() ? kpiSnap.data() : {};
+      const workingDays = Math.max(0, Math.floor(Number(kpi.workingDays || 0)));
+      const workedDays = Math.max(0, Math.floor(Number(kpi.workedDays || 0)));
+      const lateMinutes = Math.max(0, Math.floor(Number(kpi.lateMinutes || 0)));
+      let attendanceMetric = 0;
+      if (workingDays > 0) {
+        const dayScore = clampPct((workedDays / workingDays) * 100);
+        const H_day_minutes = 480;
+        const lateScore = workedDays > 0
+          ? clampPct(100 - (lateMinutes / (workedDays * H_day_minutes)) * 100)
+          : 100;
+        attendanceMetric = clampPct(dayScore * 0.90 + lateScore * 0.10);
+      } else if (Number.isFinite(Number(kpi.attendancePoints))) {
+        attendanceMetric = clampPct(Number(kpi.attendancePoints));
+      }
+      const attitudePts = clampPct(Number(kpi.attitudePoints || 0));
+
+      // Overall with dynamic weights
+      const wT = (perfWeights.task || 0) / 100;
+      const wA = (perfWeights.attendance || 0) / 100;
+      const wD = (perfWeights.attitude || 0) / 100;
+      const overall = clampPct(taskPct * wT + attendanceMetric * wA + attitudePts * wD);
+      const agOverallPct = document.getElementById('agOverallPct');
+      if (agOverallPct) agOverallPct.textContent = `${Math.round(overall)}%`;
+
+      // Summary chart
+      drawAgSummaryBar(dayTotals);
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -259,11 +597,17 @@
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
         const data = snap.data() || {};
+        agentProfile = data; // NEW: keep for target lookup
         const name = data.name || user.displayName || 'Agent';
         setAgentGreeting(name);
       } catch {
         setAgentGreeting('Agent');
       }
+
+      // Init month picker default + recompute KPIs
+      const mp = document.getElementById('monthPicker');
+      if (mp && !mp.value) mp.value = monthIdNow();
+      await recomputeAgentKpis(user.uid, (document.getElementById('monthPicker')?.value || monthIdNow()));
 
       // Init day picker + first render
       const inp = document.getElementById('todayDay');
@@ -314,6 +658,8 @@
             // If deleting the one being edited, exit edit mode
             if (editEntryKey === key && editEntryDay === dayId) exitEditMode();
             renderToday(user.uid, dayId);
+            // NEW: recompute KPIs for that month
+            await recomputeAgentKpis(user.uid, dayId.slice(0,7));
           }
         });
       }
@@ -411,20 +757,63 @@
         }, { capture: true });
       }
 
-      // Initialize month calendar with Flatpickr month grid
-      const mp = document.getElementById('monthPicker');
-      if (mp) {
-        if (mp.type !== 'text') mp.type = 'text'; // prevent native month UI
-        window.flatpickr(mp, {
+      // Initialize month calendar with Flatpickr month grid (avoid redeclaring 'mp')
+      const mpEl = document.getElementById('monthPicker');
+      if (mpEl) {
+        if (mpEl.type !== 'text') mpEl.type = 'text'; // prevent native month UI
+        window.flatpickr(mpEl, {
           plugins: [window.monthSelectPlugin({ shorthand: true, dateFormat: 'Y-m' })],
-          defaultDate: mp.value || null,
+          defaultDate: mpEl.value || null,
           onChange: (dates, str) => {
-            mp.value = str;
-            mp.dispatchEvent(new Event('change', { bubbles: true }));
+            mpEl.value = str;
+            mpEl.dispatchEvent(new Event('change', { bubbles: true }));
           }
         });
       }
     });
+
+    // Sidebar toggle (ensure it exists here too)
+    document.getElementById('toggleSidebar')?.addEventListener('click', () => {
+      document.getElementById('sidebar')?.classList.toggle('open');
+    });
+
+    // View switching (Dashboard <-> Profile) without leaving the page
+    const navDashboard = document.getElementById('navDashboard');
+    const navProfile = document.getElementById('navProfile');
+    const dashboardPanel = document.getElementById('dashboardPanel');
+    const profilePanel = document.getElementById('profilePanel');
+
+    function showDashboard(e) {
+      e?.preventDefault();
+      dashboardPanel?.classList.remove('hidden');
+      profilePanel?.classList.add('hidden');
+      navDashboard?.classList.add('active');
+      navProfile?.classList.remove('active');
+    }
+    function showProfile(e) {
+      e?.preventDefault();
+      dashboardPanel?.classList.add('hidden');
+      profilePanel?.classList.remove('hidden');
+      navDashboard?.classList.remove('active');
+      navProfile?.classList.add('active');
+    }
+
+    navDashboard?.addEventListener('click', showDashboard);
+    navProfile?.addEventListener('click', showProfile);
+
+    // Default: keep Dashboard visible on load
+    showDashboard();
+  </script>
+</body>
+</html>
+    navProfile?.addEventListener('click', showProfile);
+
+    // Default: keep Dashboard visible on load
+    showDashboard();
+  </script>
+</body>
+</html>
+    
   </script>
 </body>
 </html>

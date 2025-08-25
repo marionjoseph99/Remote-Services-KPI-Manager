@@ -5,13 +5,30 @@ import {
 } from './firebase-config.js';
 
 const $ = (q) => document.querySelector(q);
+// NEW: loader helpers
+function showLoader(text = 'Loading...') {
+  const el = document.getElementById('appLoader');
+  if (!el) return;
+  el.classList.remove('hidden');
+  const label = el.querySelector('.label');
+  if (label && text) label.textContent = text;
+}
+function hideLoader(delay = 150) {
+  const el = document.getElementById('appLoader');
+  if (!el) return;
+  // small delay to avoid flicker on very fast ops
+  setTimeout(() => el.classList.add('hidden'), delay);
+}
+
+// Immediately show while booting dashboard
+showLoader('Loading dashboard...');
+
 const logoutBtn = $('#btn-logout');
 const toggleSidebar = $('#toggleSidebar');
 const sidebar = $('#sidebar');
 
 const agentsList = $('#agentsList');
 const adminMonth = $('#adminMonth');
-const detailHeader = $('#detailHeader');
 const detailName = $('#detailName');
 const detailClient = $('#detailClient');
 const detailPosition = $('#detailPosition');
@@ -232,8 +249,8 @@ function listenMetrics() {
   unsubMetrics = onSnapshot(ref, (snap) => {
     const data = snap.exists() ? snap.data() : {};
     const attendanceTarget = Number(data.attendanceTarget || 0);
-    snapAttendance.textContent = attendanceTarget ? `${attendanceTarget}%` : '-';
-    snapTargetTasks.textContent = 'per-position';
+    if (snapAttendance) snapAttendance.textContent = attendanceTarget ? `${attendanceTarget}%` : '-';
+    if (snapTargetTasks) snapTargetTasks.textContent = 'per-position';
 
     // Pull dynamic weights (support both nested and legacy flat fields)
     const w = data.weights || {
@@ -353,10 +370,19 @@ function ensureWeightsNavButton() {
   if (btnToggleWeights) return;
   const nav = btnToggleAdv?.parentElement; // same container as other nav buttons
   if (!nav) return;
+
   btnToggleWeights = document.createElement('button');
   btnToggleWeights.id = 'btnToggleWeights';
   btnToggleWeights.textContent = 'Performance Weights';
-  nav.insertBefore(btnToggleWeights, document.getElementById('btn-logout') || null);
+
+  // SAFE INSERT: only insertBefore if the reference is a child of nav
+  const logout = document.getElementById('btn-logout');
+  if (logout && logout.parentElement === nav) {
+    nav.insertBefore(btnToggleWeights, logout);
+  } else {
+    nav.appendChild(btnToggleWeights);
+  }
+
   btnToggleWeights.addEventListener('click', (e) => {
     e.preventDefault();
     showWeights();
@@ -470,7 +496,10 @@ function ensureAttendanceInputs() {
 function selectAgent(agent) {
   selectedAgent = agent.id;
   selectedAgentProfile = agent;
-  detailHeader.textContent = `KPIs for ${agent.name}`;
+
+  // Remove legacy header text if present (we no longer show "KPIs for ...")
+  document.getElementById('detailHeader')?.remove();
+
   detailName.textContent = agent.name || '-';
   detailClient.textContent = agent.client || '-';
   detailPosition.textContent = agent.position || '-';
@@ -561,19 +590,18 @@ function drawSummaryBar(dayTotals) {
       data: {
         labels,
         datasets: [{
-          label: 'Tasks per day',
+          label: 'Tasks per day', // legend hidden; safe to keep
           data,
-          // keep original colors
           backgroundColor: 'rgba(167,139,250,0.35)',
           borderColor: 'rgba(167,139,250,0.9)',
           borderWidth: 1,
           borderRadius: 6,
-          // carry full dates for tooltip use
           dates: days
         }]
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,         // NEW: fill container height
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -582,20 +610,20 @@ function drawSummaryBar(dayTotals) {
                 const it = items?.[0];
                 return it?.dataset?.dates?.[it.dataIndex] || '';
               },
-              label: (it) => `Tasks: ${it.parsed.y}`
+              label: (it) => `${it.parsed.y}` // CHANGED: remove "Tasks" text
             }
           }
         },
+        layout: { padding: 0 },             // NEW: occupy dead space (card handles padding)
         scales: {
           x: {
-            // hide tick numbers and axis title
             ticks: { display: false },
             title: { display: false },
             grid: { color: 'rgba(255,255,255,0.06)' }
           },
           y: {
             beginAtZero: true,
-            title: { display: true, text: 'Tasks', color: '#c7c9d3' },
+            title: { display: false },      // CHANGED: remove "Tasks" axis title
             ticks: { color: '#c7c9d3' },
             grid: { color: 'rgba(255,255,255,0.06)' }
           }
@@ -725,7 +753,8 @@ function initHandlers() {
   btnSavePosTargets?.addEventListener('click', async () => {
     const inputs = Array.from(document.querySelectorAll('.pos-target'));
     const payload = {};
-    inputs.forEach(input => {
+    // FIX: proper forEach syntax
+    inputs.forEach((input) => {
       const posName = input.getAttribute('data-pos');
       const num = Number(input.value);
       payload[posName] = Number.isFinite(num) ? num : 0;
@@ -1033,7 +1062,7 @@ async function recomputeTop10() {
         totalTasks,
         target,
         taskPct,
-        attendancePts: attendanceMetric, // display metric
+        attendancePts: attendanceMetric,
         attitudePts,
         overall
       };
@@ -1042,8 +1071,47 @@ async function recomputeTop10() {
     rows.sort((a, b) => b.overall - a.overall);
     const top = rows.slice(0, 10);
     const fmt = (n) => Number.isFinite(n) ? n.toLocaleString() : '0';
+
+    // NEW: render cards grid
+    const grid = document.getElementById('top10Grid');
+    if (grid) {
+      grid.innerHTML = top.length ? top.map((r, i) => {
+        const rank = i + 1;
+        const overallPct = Math.round(r.overall);
+        const bucket = overallPct >= 85 ? 'great' : overallPct >= 70 ? 'good' : overallPct >= 50 ? 'ok' : 'bad';
+        const tasksCell = `${fmt(r.totalTasks)} / ${fmt(r.target)} (${Math.round(r.taskPct)}%)`;
+        const initials = (r.name || '?')
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map(s => s[0]?.toUpperCase() || '')
+          .join('') || '?';
+        return `
+          <div class="agent-card" data-rank="${rank}">
+            <div class="rank-ribbon rank-${rank <= 3 ? rank : ''}">#${rank}</div>
+            <div class="agent-head">
+              <div class="agent-avatar" title="${r.name}">${initials}</div>
+              <div class="agent-meta">
+                <div class="name">${r.name}</div>
+                <div class="sub">${r.client || '-'} • ${r.position || '-'}</div>
+              </div>
+            </div>
+            <div class="chips">
+              <span class="chip">Tasks: ${tasksCell}</span>
+              <span class="chip">Attendance: ${Math.round(r.attendancePts)}%</span>
+              <span class="chip">Attitude: ${Math.round(r.attitudePts)}%</span>
+            </div>
+            <span class="overall-badge ${bucket}" title="Overall">
+              ${overallPct}%
+            </span>
+          </div>
+        `;
+      }).join('') : `<div class="muted">No data for ${monthId}.</div>`;
+    }
+
+    // Fallback: keep table rows too (hidden by CSS)
     top10Table.innerHTML = top.length ? top.map((r, i) => `
-      <tr>
+      <tr data-rank="${i + 1}">
         <td>${i + 1}</td>
         <td>${r.name}</td>
         <td>${r.client}</td>
@@ -1055,6 +1123,8 @@ async function recomputeTop10() {
       </tr>
     `).join('') : `<tr><td colspan="8" class="muted">No data for ${monthId}.</td></tr>`;
   } catch (e) {
+    const grid = document.getElementById('top10Grid');
+    if (grid) grid.innerHTML = `<div class="muted">Unable to build Top Agents: ${e.message || e}</div>`;
     if (top10Table) top10Table.innerHTML = `<tr><td colspan="8" class="muted">Unable to build Top 10: ${e.message || e}</td></tr>`;
   }
 }
@@ -1098,6 +1168,14 @@ async function ensureFlatpickr() {
     l.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css';
     document.head.appendChild(l);
   }
+  // NEW: official dark theme to match original look
+  if (!document.getElementById('fp-theme-dark')) {
+    const lTheme = document.createElement('link');
+    lTheme.id = 'fp-theme-dark';
+    lTheme.rel = 'stylesheet';
+    lTheme.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css';
+    document.head.appendChild(lTheme);
+  }
   // plugin CSS (layout for month grid)
   if (!document.getElementById('fp-month-css')) {
     const l2 = document.createElement('link');
@@ -1131,54 +1209,9 @@ async function ensureFlatpickr() {
 
 // Inject Flatpickr theme overrides that match the site's palette
 function ensureFlatpickrTheme() {
-  if (document.getElementById('fp-theme-overrides')) return;
-  const css = `
-  .flatpickr-calendar{
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)), var(--panel);
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: var(--shadow);
-    border-radius: var(--radius);
-    color: var(--text);
-    overflow: hidden;
-  }
-  .flatpickr-months{ border-bottom:1px solid rgba(255,255,255,0.06); }
-  .flatpickr-months .flatpickr-month{ color:var(--text); fill:var(--text); padding:8px 6px; }
-  .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month{
-    color:var(--text); fill:var(--text); opacity:.85; border-radius:10px;
-  }
-  .flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover{
-    background:rgba(255,255,255,0.06); opacity:1;
-  }
-  .flatpickr-weekdays{ background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.06); }
-  span.flatpickr-weekday{ color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.3px; font-size:11px; }
-  .flatpickr-days,.dayContainer{ padding:10px; }
-  .flatpickr-day{
-    color:var(--text); border-radius:10px; border:1px solid transparent;
-    width:36px; height:36px; line-height:36px; margin:2px;
-  }
-  .flatpickr-day:hover{ background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.25); }
-  .flatpickr-day.today{ background:transparent; box-shadow: inset 0 0 0 2px rgba(244,114,182,0.8); }
-  .flatpickr-day.selected,.flatpickr-day.startRange,.flatpickr-day.endRange{
-    background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#0d0f1a; border-color:transparent; box-shadow:0 6px 16px rgba(167,139,250,0.25);
-  }
-  .flatpickr-day.inRange{ background:rgba(167,139,250,0.10); box-shadow: inset 0 0 0 1px rgba(167,139,250,0.25); }
-  .flatpickr-day.disabled,.flatpickr-day.flatpickr-disabled,.flatpickr-day.prevMonthDay,.flatpickr-day.nextMonthDay{
-    color:rgba(255,255,255,0.35); background:transparent; border-color:transparent;
-  }
-  .flatpickr-time input,.flatpickr-time .numInput{
-    background:var(--panel); color:var(--text); border:1px solid rgba(255,255,255,0.08); border-radius:10px;
-  }
-  .flatpickr-monthSelect-month{
-    background:transparent; color:var(--text); border-radius:10px; padding:10px 8px; border:1px solid transparent; margin:2px;
-  }
-  .flatpickr-monthSelect-month:hover{ background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.25); }
-  .flatpickr-monthSelect-month.selected{
-    background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#0d0f1a; border-color:transparent; box-shadow:0 6px 16px rgba(167,139,250,0.25);
-  }`;
-  const style = document.createElement('style');
-  style.id = 'fp-theme-overrides';
-  style.textContent = css;
-  document.head.appendChild(style);
+  // Revert to Flatpickr's original/default styles by removing our overrides
+  const el = document.getElementById('fp-theme-overrides');
+  if (el) el.remove();
 }
 
 async function initAdminCalendars() {
@@ -1215,6 +1248,340 @@ async function initAdminCalendars() {
       }
     });
   }
+}
+
+// NEW: jsPDF loader
+async function ensureJsPDF() {
+  if (window.jspdf?.jsPDF || window.jsPDF) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+    s.onload = () => res();
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+function getJsPDF() {
+  const ctor = window.jspdf?.jsPDF || window.jsPDF;
+  if (!ctor) throw new Error('jsPDF not available');
+  return new ctor({ unit: 'pt', format: 'a4' });
+}
+
+// NEW: jsPDF AutoTable loader
+async function ensureJsPDFAutoTable() {
+  if (window.jspdf?.jsPDF && window.jspdf?.autoTable) return;
+  await ensureJsPDF();
+  if (window.jspdf?.autoTable) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
+    s.onload = res;
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+// NEW: JSZip loader + save helper
+async function ensureJSZip() {
+  if (window.JSZip) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload = res;
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+function downloadBlob(filename, blob) {
+  const a = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
+// NEW: Daily report generator (per client) -> single ZIP download
+async function generateDailyReport(dayId) {
+  showLoader(`Generating daily report ${dayId}…`);
+  try {
+    await ensureJsPDF();
+    await ensureJsPDFAutoTable();
+    await ensureJSZip();
+
+    // Build client -> agents map (sorted)
+    const all = Array.isArray(agentsCache) ? agentsCache.slice() : [];
+    all.sort((a, b) =>
+      (a.client || '').localeCompare(b.client || '') ||
+      (a.name || '').localeCompare(b.name || '')
+    );
+    const groups = {};
+    all.forEach(u => {
+      const c = (u.client || 'Unassigned').trim() || 'Unassigned';
+      (groups[c] ||= []).push(u);
+    });
+
+    const zip = new window.JSZip();
+    let files = 0;
+
+    const toMs = (v) =>
+      (typeof v?.toMillis === 'function' && v.toMillis()) ||
+      (v?.seconds ? v.seconds * 1000 : 0) ||
+      (v instanceof Date ? v.getTime() : 0) ||
+      (typeof v === 'number' ? v : 0);
+
+    for (const client of Object.keys(groups).sort()) {
+      const pdf = getJsPDF();
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 40;
+      let y = margin;
+
+      // Header with client
+      pdf.setFontSize(16);
+      pdf.text(`Daily Report - ${dayId}`, margin, y);
+      y += 8;
+      pdf.setFontSize(10);
+      pdf.setTextColor(150);
+      pdf.text(`Client: ${client}  •  Generated: ${new Date().toLocaleString()}`, margin, y);
+      pdf.setTextColor(20);
+      y += 16;
+
+      for (const u of groups[client]) {
+        const ref = doc(db, 'users', u.id, 'tasks', dayId);
+        const snap = await getDoc(ref);
+        const data = snap.exists() ? snap.data() : {};
+        const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+        const total = Number(data.total || 0);
+
+        // Agent section
+        y = pdfEnsureSpace(pdf, y + 6, margin, pageH);
+        pdf.setFontSize(12);
+        pdf.setTextColor(90);
+        const hdr = `${u.name || '(no name)'}  •  ${u.position || '-'}`;
+        pdf.text(hdr, margin, y);
+        y += 14;
+
+        pdf.setTextColor(20);
+        pdf.setFontSize(11);
+        pdf.text(`Tasks submitted: ${entries.length} • Total count: ${total}`, margin, y);
+        y += 8;
+
+        // Table rows (newest first). If none, add placeholder.
+        entries.sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
+        const rows = entries.length
+          ? entries.map((e) => {
+              let when = '--:--';
+              try {
+                const d =
+                  e.createdAt?.toDate?.() ||
+                  (e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000)
+                    : (e.createdAt instanceof Date ? e.createdAt
+                    : (typeof e.createdAt === 'number' ? new Date(e.createdAt) : null)));
+                if (d) {
+                  const hh = String(d.getHours()).padStart(2, '0');
+                  const mm = String(d.getMinutes()).padStart(2, '0');
+                  when = `${hh}:${mm}`;
+                }
+              } catch {}
+              return [when, e.activity || '-', Number(e.count || 0), (e.difficulty || '').toString()];
+            })
+          : [['-', 'No tasks submitted', 0, '-']];
+
+        pdf.autoTable({
+          startY: y + 6,
+          head: [['Time', 'Activity', 'Count', 'Difficulty']],
+          body: rows,
+          theme: 'grid',
+          styles: { fontSize: 9, cellPadding: 4, lineColor: [200, 200, 200], lineWidth: 0.25 },
+          headStyles: { fillColor: [17, 24, 39], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+          margin: { left: margin, right: margin },
+          columnStyles: { 2: { halign: 'right' } }
+        });
+
+        y = (pdf.lastAutoTable?.finalY || y) + 10;
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(margin, y - 6, pageW - margin, y - 6);
+      }
+
+      // Add client PDF to ZIP
+      const fname = `KPI_Daily_${dayId}_${safeFilename(client)}.pdf`;
+      const blob = pdf.output('blob');
+      zip.file(fname, blob);
+      files++;
+    }
+
+    if (!files) {
+      zip.file('README.txt', `No agents or data found for ${dayId}.`);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(`KPI_Daily_${dayId}_AllClients.zip`, zipBlob);
+  } finally {
+    hideLoader(250);
+  }
+}
+
+// NEW: Monthly report generator (per client) -> single ZIP download
+async function generateMonthlyReport(monthId) {
+  showLoader(`Generating monthly report ${monthId}…`);
+  try {
+    await ensureJsPDF();
+    await ensureJsPDFAutoTable();
+    await ensureJSZip();
+
+    // Build client -> agents map (sorted)
+    const all = Array.isArray(agentsCache) ? agentsCache.slice() : [];
+    all.sort((a, b) =>
+      (a.client || '').localeCompare(b.client || '') ||
+      (a.name || '').localeCompare(b.name || '')
+    );
+    const groups = {};
+    all.forEach(u => {
+      const c = (u.client || 'Unassigned').trim() || 'Unassigned';
+      (groups[c] ||= []).push(u);
+    });
+
+    const zip = new window.JSZip();
+    let files = 0;
+
+    for (const client of Object.keys(groups).sort()) {
+      const pdf = getJsPDF();
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 40;
+      let y = margin;
+
+      // Header with client
+      pdf.setFontSize(16);
+      pdf.text(`Monthly Report - ${monthId}`, margin, y);
+      y += 8;
+      pdf.setFontSize(10);
+      pdf.setTextColor(150);
+      pdf.text(`Client: ${client}  •  Generated: ${new Date().toLocaleString()}`, margin, y);
+      pdf.setTextColor(20);
+      y += 16;
+
+      for (const u of groups[client]) {
+        // Sum totals across the month
+        const daysRef = collection(db, 'users', u.id, 'tasks');
+        const qy = query(daysRef, where('month', '==', monthId));
+        const snapDays = await getDocs(qy);
+        let total = 0;
+        const perDay = [];
+        snapDays.forEach(d => {
+          const val = Number(d.data()?.total || 0);
+          total += val;
+          perDay.push({ date: d.data()?.date || d.id, total: val });
+        });
+
+        // Agent header
+        y = pdfEnsureSpace(pdf, y + 6, margin, pageH);
+        pdf.setFontSize(12);
+        pdf.setTextColor(90);
+        const hdr = `${u.name || '(no name)'}  •  ${u.position || '-'}`;
+        pdf.text(hdr, margin, y);
+        y += 14;
+
+        pdf.setTextColor(20);
+        pdf.setFontSize(11);
+        pdf.text(`Monthly Total: ${total}`, margin, y);
+        y += 8;
+
+        if (total > 0) {
+          perDay.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+          const rows = perDay.map(d => [d.date, d.total]);
+          pdf.autoTable({
+            startY: y + 6,
+            head: [['Date', 'Total']],
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 4, lineColor: [200, 200, 200], lineWidth: 0.25 },
+            headStyles: { fillColor: [17, 24, 39], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+            margin: { left: margin, right: margin }
+          });
+          y = (pdf.lastAutoTable?.finalY || y) + 10;
+        } else {
+          // No data note for the month
+          pdf.setFontSize(10);
+          pdf.setTextColor(120);
+          y = pdfAddWrappedText(pdf, 'No data for this month.', margin + 6, y + 6, pageW - margin * 2 - 20, 12) + 6;
+          pdf.setTextColor(20);
+        }
+
+        pdf.setDrawColor(230, 230, 230);
+        pdf.line(margin, y, pageW - margin, y);
+        y += 6;
+      }
+
+      // Add client PDF to ZIP
+      const fname = `KPI_Monthly_${monthId}_${safeFilename(client)}.pdf`;
+      const blob = pdf.output('blob');
+      zip.file(fname, blob);
+      files++;
+    }
+
+    if (!files) {
+      zip.file('README.txt', `No agents or data found for ${monthId}.`);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(`KPI_Monthly_${monthId}_AllClients.zip`, zipBlob);
+  } finally {
+    hideLoader(250);
+  }
+}
+
+// NEW: helper to sanitize client names for filenames
+function safeFilename(name) {
+  return String(name || 'Unassigned')
+    .trim()
+    .replace(/[^a-z0-9\-_.]+/gi, '_')
+    .slice(0, 100);
+}
+
+// Restore: Report UI wiring (dropdown -> daily/monthly generators)
+function initReportUI() {
+  const btn = document.getElementById('btnReports');
+  const menu = document.getElementById('reportMenu');
+  const optDaily = document.getElementById('optDailyReport');
+  const optMonthly = document.getElementById('optMonthlyReport');
+  if (!btn || !menu) return;
+
+  const hide = () => menu.classList.add('hidden');
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    menu.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!menu.classList.contains('hidden')) {
+      const dd = document.getElementById('reportDropdown');
+      if (dd && !dd.contains(e.target)) hide();
+    }
+  });
+
+  optDaily?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    hide();
+    const def = document.getElementById('detailDay')?.value || new Date().toISOString().slice(0, 10);
+    const day = prompt('Enter day (YYYY-MM-DD):', def);
+    if (!day) return;
+    try { await generateDailyReport(day); } catch {}
+  });
+  optMonthly?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    hide();
+    const def = document.getElementById('adminMonth')?.value || new Date().toISOString().slice(0, 7);
+    const month = prompt('Enter month (YYYY-MM):', def);
+    if (!month) return;
+    try { await generateMonthlyReport(month); } catch {}
+  });
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -1259,6 +1626,12 @@ onAuthStateChanged(auth, async (user) => {
 
   // Initialize calendars after UI is ready
   initAdminCalendars().catch(() => {});
+
+  // NEW: init report UI
+  initReportUI();
+
+  // NEW: hide loader after initial setup
+  hideLoader(250);
 });
 
 btnOverview?.addEventListener('click', (e) => {
@@ -1267,4 +1640,5 @@ btnOverview?.addEventListener('click', (e) => {
   initTop10Collapsible?.();
 });
 
+initHandlers();
 initHandlers();

@@ -6,7 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Add favicon for browser tab -->
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root { --font-sans: 'Lexend', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; }
+    html, body { font-family: var(--font-sans); }
+    button, input, select, textarea { font-family: inherit; }
+
     /* 30/70 split for the two cards; stacks on small screens */
     .grid.ratio-30-70 {
       grid-template-columns: 0.3fr 0.7fr;
@@ -62,6 +71,22 @@
     #taskProgressTile { align-items: center; gap: 18px; }
     #taskProgressTile .progress-meta { flex: 1; }
 
+    /* Center the Task Progress contents inside the card */
+    #taskProgressTile {
+      /* keep it a row */
+      justify-content: center;
+      /* hard-center the whole row block */
+      max-width: 620px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    /* Do NOT stretch the details block; keep natural width */
+    #taskProgressTile .progress-meta {
+      flex: 0 0 auto; /* overrides earlier flex:1 */
+      text-align: left;
+      max-width: 420px;
+    }
+
     /* Default upsize */
     #taskProgressTile .circle-progress {
       width: 140px;   /* was 100px */
@@ -99,6 +124,305 @@
         font-size: 16px;
       }
     }
+
+    /* OVERRIDES: align Task Progress left and make ring smaller */
+    #taskProgressTile {
+      justify-content: flex-start;  /* left align row */
+      width: auto;                  /* cancel previous 100% */
+      max-width: none;              /* cancel previous 620px */
+      margin-left: 0;               /* cancel auto-centering */
+      margin-right: 0;
+    }
+    /* slightly smaller circle */
+    #taskProgressTile .circle-progress {
+      width: 120px;   /* was 140px */
+      height: 120px;  /* was 140px */
+      font-size: 18px;
+    }
+    /* keep inner size balanced */
+    #taskProgressTile .circle-inner {
+      width: 78%;
+      height: 78%;
+      font-size: 17px;
+    }
+    @media (min-width: 1440px) {
+      #taskProgressTile .circle-progress {
+        width: 160px; /* was 180px */
+        height: 160px;
+        font-size: 22px;
+      }
+      #taskProgressTile .circle-inner {
+        width: 78%;
+        height: 78%;
+        font-size: 19px;
+      }
+    }
+    @media (max-width: 900px) {
+      #taskProgressTile .circle-progress {
+        width: 96px;  /* was 110px */
+        height: 96px;
+        font-size: 16px;
+      }
+      #taskProgressTile .circle-inner { font-size: 15px; }
+    }
+
+    /* Flat background overrides: remove gradients on surfaces */
+    body.admin-page,
+    .main,
+    .sidebar,
+    .topbar,
+    .card,
+    /* progress tile surface only (keep ring gradient) */
+    .progress-tile {
+      background-color: var(--card, var(--panel));
+      background-image: none !important;
+    }
+
+    /* Sidebar as flex column so logout can be pinned at bottom */
+    .sidebar { display: flex; flex-direction: column; }
+    .sidebar .nav { display: flex; flex-direction: column; gap: 8px; }
+    .sidebar-spacer { flex: 1 1 auto; }
+
+    /* Logout button: full-width, flat, matches theme */
+    #btn-logout {
+      align-self: stretch;
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius, 10px);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--danger, #ef4444);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      box-shadow: var(--shadow, none);
+      background-image: none !important; /* force flat */
+      transition: background-color .15s ease, transform .05s ease;
+    }
+    #btn-logout:hover { background: var(--danger-hover, #f05252); }
+    #btn-logout:active { transform: translateY(1px); }
+    #btn-logout:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Seamless page gradient (keeps cards/panels flat) */
+    body.admin-page {
+      /* subtle, dark vertical gradient that won't band while scrolling */
+      background: linear-gradient(180deg, #0e1220 0%, #0b0f1c 50%, #0a0d18 100%) !important;
+      background-attachment: fixed;
+    }
+
+    /* Do NOT let Task Progress card stretch with the Summary card */
+    .task-progress-card { align-self: start; height: auto; }
+
+    /* NEW: keep Task Progress and Summary same fixed height */
+    #kpiPair > .card {
+      align-self: start;         /* avoid grid stretch */
+      height: 240px;             /* fixed, equal height */
+      overflow: hidden;          /* prevent expansion */
+      display: flex;               /* NEW: allow child (canvas) to flex-fill */
+      flex-direction: column;
+    }
+    #kpiPair > .card h3 { margin-bottom: 8px; }
+    /* Summary canvas height clamp */
+    #kpiPair #summaryBar {
+      flex: 1 1 auto;
+      height: auto !important;     /* override previous clamp */
+      max-height: none !important; /* override previous clamp */
+      width: 100% !important;
+      min-height: 0;               /* avoid overflow issues in flex containers */
+      display: block;
+    }
+    /* On narrow screens, let them size naturally when stacked */
+    @media (max-width: 900px) {
+      #kpiPair > .card { height: auto; }
+    }
+
+    /* Agent meta badges: bigger with the same gradient as primary buttons */
+    #agentMetaRow {
+      gap: 16px !important;
+    }
+    #agentMetaRow .badge {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0d0f1a;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.1px;
+      box-shadow: 0 6px 16px rgba(167,139,250,0.25);
+    }
+    #agentMetaRow .badge strong {
+      font-weight: 800;
+      margin-left: 6px;
+      color: #0b0f1c;
+    }
+
+    /* Top 10 table enhancements */
+    .table.top10 thead th { color: #cfd2df; }
+    .table.top10 tbody tr { transition: background-color .15s ease, box-shadow .15s ease; }
+    .table.top10 tbody tr:hover { background-color: rgba(255,255,255,0.03); }
+
+    /* Rank medals (in first cell) */
+    .table.top10 td.rank { width: 44px; }
+    .table.top10 .medal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #0b0f1c;
+      background: #94a3b8; /* default (4+) */
+      box-shadow: 0 6px 14px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.35);
+    }
+    .table.top10 .medal-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+    .table.top10 .medal-2 { background: linear-gradient(135deg, #e5e7eb, #c7c9d3); }
+    .table.top10 .medal-3 { background: linear-gradient(135deg, #f59e0b, #b45309); color: #111827; }
+
+    /* Subtle row accent for ranks 1–3 */
+    .table.top10 tbody tr[data-rank="1"] { box-shadow: inset 0 0 0 2px rgba(245,158,11,0.22); background: rgba(245,158,11,0.06); }
+    .table.top10 tbody tr[data-rank="2"] { box-shadow: inset 0 0 0 2px rgba(207,212,220,0.2); background: rgba(207,212,220,0.05); }
+    .table.top10 tbody tr[data-rank="3"] { box-shadow: inset 0 0 0 2px rgba(180,83,9,0.18);  background: rgba(180,83,9,0.05); }
+
+    /* Redesigned Overall badge */
+    .table.top10 td.overall {
+      min-width: 110px;
+      text-align: center;
+    }
+    .table.top10 .overall-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 64px;
+      padding: 0 14px;
+      height: 32px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.2px;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      background: #64748b;
+      border: none;
+      transition: background .2s;
+      position: relative;
+      margin: 0 auto;
+    }
+    .table.top10 .overall-badge.bad    { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+    .table.top10 .overall-badge.ok     { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .table.top10 .overall-badge.good   { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .table.top10 .overall-badge.great  { background: linear-gradient(90deg, #2dd4bf, #0ea5e9); }
+    .table.top10 .overall-badge .icon {
+      margin-right: 7px;
+      font-size: 17px;
+      opacity: 0.92;
+      vertical-align: middle;
+    }
+    /* Optional: subtle glow for great */
+    .table.top10 .overall-badge.great {
+      box-shadow: 0 0 0 2px #0ea5e9, 0 2px 8px rgba(0,0,0,0.10);
+    }
+
+    /* App loader (full-screen overlay) */
+    .app-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 11, 20, 0.55);
+      backdrop-filter: blur(2px);
+    }
+    .app-loader.hidden { display: none; }
+    .app-loader .box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #0f1426;
+      color: #e5e7eb;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .app-loader .spinner {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.18);
+      border-top-color: var(--accent, #a78bfa);
+      animation: spin 0.9s linear infinite;
+    }
+    .app-loader .label {
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      font-size: 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Top Agents: card grid */
+    .top10-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .agent-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    }
+    .agent-card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.22); }
+    .agent-head {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .agent-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #0b0f1c;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 6px 14px rgba(167,139,250,0.25);
+      flex: 0 0 auto;
+    }
+    .agent-meta .name { font-weight: 700; letter-spacing: .1px; }
+    .agent-meta .sub { color: #cfd2df; font-size: 12px; }
+    .rank-ribbon {
+      position: absolute; top: -8px; right: -8px;
+      background: #94a3b8; color: #0b0f1c; font-weight: 800;
+      border-radius: 999px; padding: 6px 10px; font-size: 12px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.35);
+    }
+    .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+    .rank-2 { background: linear-gradient(135deg, #e5e7eb, #c7c9d3); }
+    .rank-3 { background: linear-gradient(135deg, #f59e0b, #b45309); color: #111827; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb;
+    }
+    .overall-badge {
+      align-self: flex-start;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px; font-weight: 800;
+      color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    }
+    .overall-badge.bad   { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+    .overall-badge.ok    { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .overall-badge.good  { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .overall-badge.great { background: linear-gradient(90deg, #2dd4bf, #0ea5e9); }
+
+    /* Hide old table (kept for fallback) */
+    .top10-table-hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -111,10 +435,11 @@
       <div class="nav">
         <a href="#" id="btnOverview" class="active">Overview</a>
         <button id="btnToggleAdv">Advanced Settings</button>
-        <button id="btn-logout" class="danger">Logout</button>
       </div>
 
-      <div class="card" style="margin-top:auto;">
+      <!-- removed Metrics Snapshot card -->
+      <!--
+      <div class="card">
         <div class="muted">Metrics Snapshot</div>
         <div class="kpi" style="margin-top:8px;">
           <div class="value" id="snapTargetTasks">per-position</div>
@@ -125,6 +450,10 @@
           <div class="label">Attendance Target</div>
         </div>
       </div>
+      -->
+
+      <div class="sidebar-spacer"></div>
+      <button id="btn-logout" class="btn danger">Logout</button>
     </aside>
 
     <main class="main">
@@ -133,6 +462,14 @@
         <div style="display:flex; gap:10px; align-items:center;">
           <span class="badge">Admin</span>
           <input type="month" id="adminMonth" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
+          <!-- NEW: Generate Report dropdown -->
+          <div id="reportDropdown" style="position:relative;">
+            <button id="btnReports" class="btn">Generate Report ▾</button>
+            <div id="reportMenu" class="card hidden" style="position:absolute; right:0; top:36px; z-index:20; padding:6px; min-width:180px;">
+              <button id="optDailyReport" class="btn secondary" style="width:100%;">Daily Report</button>
+              <button id="optMonthlyReport" class="btn secondary" style="width:100%; margin-top:6px;">Monthly Report</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -142,7 +479,12 @@
         <div class="card">
           <h2>Top 10 Agents (Overall Performance)</h2>
           <div class="muted">Month: <span id="top10Month"></span></div>
-          <table class="table" style="margin-top:8px;">
+
+          <!-- NEW: card grid -->
+          <div id="top10Grid" class="top10-grid"></div>
+
+          <!-- Keep old table but hide -->
+          <table class="table top10 top10-table-hidden" style="margin-top:8px;">
             <thead>
               <tr>
                 <th>#</th>
@@ -168,16 +510,15 @@
 
           <div class="card">
             <h2>Agent KPI Detail</h2>
-            <div class="muted" id="detailHeader">Select an agent to view KPIs.</div>
-            <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
-              <span class="badge">Name: <strong id="detailName" style="margin-left:6px;">-</strong></span>
-              <span class="badge">Client: <strong id="detailClient" style="margin-left:6px;">-</strong></span>
-              <span class="badge">Position: <strong id="detailPosition" style="margin-left:6px;">-</strong></span>
+            <div id="agentMetaRow" style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
+              <span class="badge">Name: <strong id="detailName">-</strong></span>
+              <span class="badge">Client: <strong id="detailClient">-</strong></span>
+              <span class="badge">Position: <strong id="detailPosition">-</strong></span>
             </div>
 
             <!-- REPLACED: Progress tile in its own card + another card next to it -->
-            <div class="grid two" style="margin-top:12px;">
-              <div class="card">
+            <div id="kpiPair" class="grid two" style="margin-top:12px;">
+              <div class="card task-progress-card">
                 <h3>Task Progress</h3>
                 <div class="progress-tile" id="taskProgressTile" style="margin-top:8px;">
                   <div class="circle-progress" id="taskProgress" style="--p: 0;">
@@ -196,7 +537,7 @@
               <div class="card">
                 <h3>Summary</h3>
                 <!-- REPLACED: bar chart canvas for monthly daily totals -->
-                <canvas id="summaryBar" height="150" style="margin-top:8px;"></canvas>
+                <canvas id="summaryBar" style="margin-top:8px;"></canvas>
               </div>
             </div>
 
@@ -297,7 +638,39 @@
     </main>
   </div>
 
+  <!-- Loader overlay -->
+  <div id="appLoader" class="app-loader hidden" role="status" aria-live="polite" aria-label="Loading">
+    <div class="box">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="label">Loading…</div>
+    </div>
+  </div>
+
   <script type="module" src="./admin.js"></script>
+  <!-- Auto-select the first agent to show KPI Detail by default -->
+  <script>
+    (function () {
+      const list = document.getElementById('agentsList');
+      if (!list) return;
+      let done = false;
+      let obs;
+
+      const selectFirst = () => {
+        if (done) return;
+        const first = list.querySelector('.list-item');
+        if (first) {
+          done = true;
+          try { obs && obs.disconnect(); } catch {}
+          first.click(); // triggers admin.js listener -> selectAgent()
+        }
+      };
+
+      // Try immediately (in case the list is already rendered)
+      selectFirst();
+      // Observe for async population
+      obs = new MutationObserver(selectFirst);
+      obs.observe(list, { childList: true });
+    })();
+  </script>
 </body>
-</html>
 </html>

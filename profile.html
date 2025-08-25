@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>KPI Manager - Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="icon" type="image/png" href="logo.png" />
+  <style>
+    /* Seamless page gradient to match other pages */
+    body.agent-page {
+      background: linear-gradient(180deg, #0e1220 0%, #0b0f1c 50%, #0a0d18 100%) !important;
+      background-attachment: fixed;
+    }
+    /* Sidebar as flex column so logout stays at the very bottom */
+    .sidebar { display: flex; flex-direction: column; }
+    .sidebar .nav { display: flex; flex-direction: column; gap: 8px; }
+    .sidebar-spacer { flex: 1 1 auto; }
+
+    /* Logout button: same look as admin */
+    #btn-logout {
+      align-self: stretch;
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius, 10px);
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--danger, #ef4444);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      box-shadow: var(--shadow, none);
+      background-image: none !important;
+      transition: background-color .15s ease, transform .05s ease;
+    }
+    #btn-logout:hover { background: var(--danger-hover, #f05252); }
+    #btn-logout:active { transform: translateY(1px); }
+    #btn-logout:disabled { opacity: .6; cursor: not-allowed; }
+  </style>
+</head>
+<body class="agent-page">
+  <div class="container">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="dot"></span>
+        <div class="title">KPI Manager</div>
+      </div>
+
+      <div class="nav">
+        <a href="./agent.html">Dashboard</a>
+        <a href="#" class="active">Profile</a>
+      </div>
+
+      <div class="sidebar-spacer"></div>
+      <button id="btn-logout" class="btn danger">Logout</button>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="hamburger" id="toggleSidebar">☰ Menu</button>
+        <span class="badge" id="helloBadge">Profile</span>
+      </div>
+
+      <div class="card" id="profileCard">
+        <h2>Your Profile</h2>
+        <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
+          <span class="badge">Name: <strong id="profName" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Email: <strong id="profEmail" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Client: <strong id="profClient" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Position: <strong id="profPosition" style="margin-left:6px;">-</strong></span>
+          <span class="badge">Role: <strong id="profRole" style="margin-left:6px;">-</strong></span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { auth, db, onAuthStateChanged, signOut, doc, getDoc } from './firebase-config.js';
+
+    const $ = (q) => document.querySelector(q);
+    const sidebar = $('#sidebar');
+    const toggle = $('#toggleSidebar');
+    const logout = $('#btn-logout');
+
+    toggle?.addEventListener('click', () => sidebar?.classList.toggle('open'));
+    logout?.addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = './index.html';
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = './index.html';
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const data = snap.exists() ? snap.data() : {};
+        $('#profName').textContent = data.name || user.displayName || '-';
+        $('#profEmail').textContent = user.email || data.email || '-';
+        $('#profClient').textContent = data.client || data.profile?.client || '-';
+        $('#profPosition').textContent = data.position || data.profile?.position || '-';
+        $('#profRole').textContent = data.role || data.profile?.role || 'agent';
+      } catch {
+        // leave defaults if fetch fails
+      }
+    });
+  </script>
+</body>
+</html>
