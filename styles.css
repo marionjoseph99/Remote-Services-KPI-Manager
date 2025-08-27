@@ -156,14 +156,14 @@ a { color: inherit; text-decoration: none; }
 .form-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 5px;
 }
 
 .input {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 15px;
+  margin-bottom: 0px;
 }
 
 .input label {
@@ -666,3 +666,4 @@ span.flatpickr-weekday {
   border-color: transparent;
   box-shadow: 0 6px 16px rgba(167,139,250,0.25);
 }
+

@@ -66,6 +66,8 @@
       position: relative; width: 110px; height: 110px; border-radius: 50%;
       background: conic-gradient(var(--accent) calc(var(--p, 0) * 1%), #333 0);
       display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;
+      aspect-ratio: 1/1;
+      flex-shrink: 0;
     }
     .circle-inner {
       position:absolute; width: 78%; height:78%; border-radius:50%; background: var(--panel);
@@ -118,8 +120,8 @@
     /* Table scroll region for both tables */
     #todayTable, #monthTable {
       display: block;
-      max-height: 320px;
-      min-height: 320px;
+      max-height: 400px;
+      min-height: 400px;
       overflow-y: auto;
       width: 100%;
     }
@@ -132,6 +134,172 @@
     .table tbody {
       display: block;
       width: 100%;
+    }
+
+    /* Light theme variables */
+    :root[data-theme='light'] {
+      --card: #f8fafc;
+      --panel: #f1f5f9;
+      --text: #1e293b;
+      --accent: #6366f1;
+      --accent-2: #a78bfa;
+      --danger: #ef4444;
+      --danger-hover: #f05252;
+      --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    [data-theme='light'] body.agent-page {
+      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+      color: var(--text);
+    }
+    [data-theme='light'] .sidebar,
+    [data-theme='light'] .main,
+    [data-theme='light'] .topbar,
+    [data-theme='light'] .card {
+      background-color: var(--card, #fff) !important;
+      color: var(--text, #1e293b);
+      box-shadow: var(--shadow, none);
+    }
+    [data-theme='light'] .progress-tile,
+    [data-theme='light'] .circle-inner {
+      background: var(--panel, #f1f5f9) !important;
+      color: var(--text, #1e293b);
+    }
+    [data-theme='light'] .circle-progress {
+      background: conic-gradient(var(--accent) calc(var(--p, 0) * 1%), #e5e7eb 0);
+      color: var(--text, #1e293b);
+    }
+    [data-theme='light'] .badge {
+      background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+      color: #3730a3;
+    }
+    [data-theme='light'] .btn,
+    [data-theme='light'] .btn.secondary {
+      background: #6366f1;
+      color: #fff;
+    }
+    [data-theme='light'] .btn.danger {
+      background: #ef4444;
+      color: #fff;
+    }
+    [data-theme='light'] .btn.secondary {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    [data-theme='light'] .muted {
+      color: #64748b;
+    }
+    [data-theme='light'] .table thead th,
+    [data-theme='light'] .table tbody td {
+      color: #334155;
+      background: transparent;
+    }
+    [data-theme='light'] .table {
+      background: transparent;
+    }
+    [data-theme='light'] input,
+    [data-theme='light'] select {
+      background: #fff;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+    }
+    [data-theme='light'] .sidebar .brand .title {
+      color: #3730a3;
+    }
+    [data-theme='light'] .sidebar .brand .dot {
+      background: #6366f1;
+    }
+
+    
+    .theme-switch-toggle .switch {
+      position: relative;
+      width: 70px;
+      height: 32px;
+      background: #23263a;
+      border-radius: 999px;
+      border: 1.5px solid #e5e7eb;
+      transition: background 0.2s, border 0.2s;
+      display: flex;
+      align-items: center;
+    }
+    .theme-switch-toggle input[type="checkbox"] {
+      appearance: none;
+      width: 70px;
+      height: 32px;
+      margin: 0;
+      position: absolute;
+      left: 0; top: 0;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+    .theme-switch-toggle .slider {
+      position: absolute;
+      left: 0; top: 0;
+      width: 70px;
+      height: 32px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      transition: background 0.2s;
+      z-index: 1;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .slider {
+      background: #23263a;
+    }
+    .theme-switch-toggle .thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: left 0.22s cubic-bezier(.4,0,.2,1), background 0.2s;
+      z-index: 3;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .thumb {
+      left: 41px;
+      background: #fff;
+    }
+    .theme-switch-toggle .thumb .moon {
+      display: block;
+      color: #fbbf24;
+      font-size: 18px;
+      filter: drop-shadow(0 0 1px #fbbf24);
+      background-color: #0a0d18;
+      border-radius: 100%;
+    }
+    .theme-switch-toggle .thumb .sun {
+      display: none;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .thumb .moon {
+      display: none;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .thumb .sun {
+      display: block;
+      color: #fbbf24;
+      font-size: 18px;
+      filter: drop-shadow(0 0 1px #fbbf24);
+    }
+    .theme-switch-toggle .icon-sun,
+    .theme-switch-toggle .icon-moon {
+      font-size: 18px;
+      margin: 0 2px;
+      opacity: 0.85;
+      pointer-events: none;
+      transition: color 0.2s, opacity 0.2s;
+    }
+    .theme-switch-toggle .icon-sun {
+      color: #fbbf24;
+      margin-right: 6px;
+    }
+    .theme-switch-toggle .icon-moon {
+      color: #64748b;
+      margin-left: 6px;
     }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,12 +321,26 @@
       <!-- Ensure spacer + styled logout button at the very bottom -->
       <div class="sidebar-spacer"></div>
       <button id="btn-logout" class="btn danger">Logout</button>
+      <!-- Version Info button will be injected here -->
     </aside>
 
     <main class="main">
-      <div class="topbar">
-        <button class="hamburger" id="toggleSidebar">☰ Menu</button>
-        <div class="badge hidden" id="welcomeBadge">Loading profile…</div>
+      <div class="topbar" style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="hamburger" id="toggleSidebar">☰ Menu</button>
+          <div class="badge hidden" id="welcomeBadge">Loading profile…</div>
+        </div>
+        <!-- Theme switch toggle in main panel top right -->
+        <label class="theme-switch-toggle" title="Toggle light/dark mode">
+          <span class="switch">
+            <input type="checkbox" id="themeToggle" />
+            <span class="slider"></span>
+            <span class="thumb">
+              <span class="moon">&#127769;</span>
+              <span class="sun">&#9728;</span>
+            </span>
+          </span>
+        </label>
       </div>
 
       <!-- NEW: Dashboard view wrapper -->
@@ -192,6 +374,7 @@
               <div class="value" id="agOverallPct">0%</div>
               <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
             </div>
+            <div class="muted" id="agOverallMsg" style="margin-top:8px;"></div>
           </div>
 
           <div class="card">
@@ -201,37 +384,17 @@
               <div class="label">vs monthly target</div>
             </div>
             <div class="muted" id="agTaskMeta" style="margin-top:6px;">0 / 0</div>
+            <div class="muted" id="agTaskMsg" style="margin-top:8px;"></div>
           </div>
         </div>
-
-        <!-- Remove duplicate Overall Performance and Task Created cards below -->
-        <!--
-        <div class="grid two" style="margin-top:16px;">
-          <div class="card">
-            <h2>Overall Performance</h2>
-            <div class="kpi">
-              <div class="value" id="agOverallPct">0%</div>
-              <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>Task Created</h2>
-            <div class="kpi">
-              <div class="value" id="agTaskPct">0%</div>
-              <div class="label">vs monthly target</div>
-            </div>
-            <div class="muted" id="agTaskMeta" style="margin-top:6px;">0 / 0</div>
-          </div>
-        </div>
-        -->
 
         <div class="grid three" style="display:grid; grid-template-columns: 0.7fr 1.3fr 1.3fr; gap:18px; margin-top:18px;">
           <!-- Submit Task container -->
           <div class="card" style="max-width:320px; min-width:220px; flex: 0 0 260px;">
-            <h2>Submit Task</h2>
+            <h2>Submit Task Manually</h2>
             <p class="muted">Log activities to update your KPIs in real time.</p>
             <div class="form-row" style="margin-top:10px; flex-direction:column; gap:14px; display:flex;">
+              <!-- Manual entry section -->
               <div class="input">
                 <label for="activity">Activity name</label>
                 <input type="text" id="activity" placeholder="e.g., Calls handled" />
@@ -240,17 +403,41 @@
                 <label for="count">Number completed</label>
                 <input type="number" id="count" min="1" step="1" placeholder="e.g., 10" />
               </div>
+              <button id="btn-submit" class="btn" style="margin-top:0;">Add Entry</button>
+              <!-- Excel import section -->
               <div class="input">
-                <label for="difficulty">Difficulty</label>
-                <select id="difficulty" required>
-                  <option value="" disabled selected>Select difficulty</option>
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
+                <h2>Submit Task from Excel</h2>
+                <label for="excelPaste">Paste activities from Excel</label>
+                <textarea
+                  id="excelPaste"
+                  rows="6"
+                  style="
+                    background: var(--panel);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    color: var(--text);
+                    padding: 8px 10px;
+                    border-radius: 10px;
+                    font-family: inherit;
+                    font-size: 13px;
+                    width: 100%;
+                    min-width: 0;
+                    max-width: 100%;
+                    min-height: 90px;
+                    max-height: 120px;
+                    resize: none;
+                    box-sizing: border-box;
+                    line-height: 1.5;
+                    margin-top: 0;
+                    margin-bottom: 0;
+                    box-shadow: var(--shadow, none);
+                    transition: border-color .15s;
+                  "
+                  placeholder="Paste text from excel..."
+                ></textarea>
+                <button id="importExcelBtn" type="button" class="btn" style="margin-top:8px;">Import Activities</button>
+                <div id="importStatus" class="muted" style="margin-top:6px;"></div>
               </div>
             </div>
-            <button id="btn-submit" class="btn" style="margin-top:16px;">Add Entry</button>
             <div id="submitStatus" class="muted" style="margin-top:8px;"></div>
           </div>
 
@@ -302,9 +489,10 @@
   <!-- Flatpickr core + monthSelect plugin -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
-
   <script type="module">
-    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp, getDocs, collection, query, where } from './firebase-config.js';
+    import { injectVersionButton } from './version-info.js';
+    injectVersionButton();
+    import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, serverTimestamp, getDocs, collection, query, where, onSnapshot } from './firebase-config.js';
     function setAgentGreeting(name) {
       const txt = `Hello, ${name || 'Agent'}`;
       const sidebar = document.querySelector('.sidebar');
@@ -380,10 +568,10 @@
       const submitBtn = document.getElementById('btn-submit');
       const cancelBtn = ensureCancelEditButton();
 
-      activityEl.value = entry.activity || '';
-      countEl.value = Number(entry.count || 0);
+      if (activityEl) activityEl.value = entry.activity || '';
+      if (countEl) countEl.value = Number(entry.count || 0);
       if (difficultyEl) difficultyEl.value = entry.difficulty || '';
-      submitBtn.textContent = 'Update Entry';
+      if (submitBtn) submitBtn.textContent = 'Update Entry';
       if (cancelBtn) cancelBtn.style.display = '';
       editEntryKey = entry._keyMs; // normalized ms key
       editEntryDay = dayId;
@@ -426,9 +614,52 @@
                 </tr>`;
             }).join('')
           : `<tr><td colspan="4" class="muted">No entries for ${dayId}.</td></tr>`;
+
+        // --- FIX: Always re-attach event delegation after rendering ---
+        // Remove any previous event listener by cloning the node
+        const newTbody = tbody.cloneNode(true);
+        if (tbody.parentNode) {
+          tbody.parentNode.replaceChild(newTbody, tbody);
+          newTbody.addEventListener('click', async (ev) => {
+            const btn = ev.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const key = Number(btn.dataset.key || '0');
+            const dayId = document.getElementById('todayDay')?.value;
+            if (!dayId || !Number.isFinite(key)) return;
+
+            const ref = doc(db, 'users', uid, 'tasks', dayId);
+            const snap = await getDoc(ref);
+            const data = snap.exists() ? snap.data() : {};
+            const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+            entries.forEach(e => (e._keyMs = toMillisAny(e.createdAt ?? e.createdAtMs)));
+            const idx = entries.findIndex(e => e._keyMs === key);
+            if (idx < 0) return;
+
+            if (action === 'edit') {
+              enterEditMode(entries[idx], dayId);
+            } else if (action === 'delete') {
+              if (!confirm('Delete this entry?')) return;
+              entries.splice(idx, 1);
+              const total = entries.reduce((s, e) => s + Number(e.count || 0), 0);
+              await setDoc(ref, {
+                date: dayId,
+                month: dayId.slice(0,7),
+                total,
+                entries: entries.map(({ _keyMs, ...rest }) => rest), // strip helper
+                updatedAt: serverTimestamp()
+              }, { merge: true });
+              // If deleting the one being edited, exit edit mode
+              if (editEntryKey === key && editEntryDay === dayId) exitEditMode();
+              renderToday(uid, dayId);
+              // NEW: recompute KPIs for that month
+              await recomputeAgentKpis(uid, dayId.slice(0,7));
+            }
+          });
+        }
       } catch (e) {
         console.error('renderToday failed:', e);
-        tbody.innerHTML = `<tr><td colspan="4" class="muted">Unable to load entries.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="muted">Unable to load entries.</td></tr>`;
       }
     }
 
@@ -558,6 +789,28 @@
       if (agTaskPct) agTaskPct.textContent = `${Math.round(taskPct)}%`;
       if (agTaskMeta) agTaskMeta.textContent = `${fmt(totalTasks)} / ${fmt(target)}`;
 
+      // --- Task Created Message ---
+      const agTaskMsg = document.getElementById('agTaskMsg');
+      if (agTaskMsg) {
+        let msg = '';
+        if (!target || target === 0) {
+          msg = "No target set for your position.";
+        } else if (taskPct >= 100) {
+          msg = "Amazing! You've reached your target!";
+        } else if (taskPct >= 90) {
+          msg = "Awesome! You're almost there!";
+        } else if (taskPct >= 70) {
+          msg = "Great progress! Keep going!";
+        } else if (taskPct >= 40) {
+          msg = "Good start! Keep pushing!";
+        } else if (taskPct > 0) {
+          msg = "Let's get started! You can do it!";
+        } else {
+          msg = "No tasks logged yet. Start now!";
+        }
+        agTaskMsg.textContent = msg;
+      }
+
       // Attendance/Attitude from KPI doc if present
       const kpiSnap = await getDoc(doc(db, 'users', uid, 'kpi', monthId));
       const kpi = kpiSnap.exists() ? kpiSnap.data() : {};
@@ -585,8 +838,58 @@
       const agOverallPct = document.getElementById('agOverallPct');
       if (agOverallPct) agOverallPct.textContent = `${Math.round(overall)}%`;
 
+      // --- Overall Performance Message ---
+      const agOverallMsg = document.getElementById('agOverallMsg');
+      if (agOverallMsg) {
+        let msg = '';
+        if (overall >= 95) {
+          msg = "Outstanding performance! Keep it up!";
+        } else if (overall >= 85) {
+          msg = "Excellent! You're on track!";
+        } else if (overall >= 70) {
+          msg = "Nice! You're almost there!";
+        } else if (overall >= 50) {
+          msg = "Good effort! Keep improving!";
+        } else if (overall > 0) {
+          msg = "Let's boost your performance!";
+        } else {
+          msg = "No data yet. Start logging your tasks!";
+        }
+        agOverallMsg.textContent = msg;
+      }
+
       // Summary chart
       drawAgSummaryBar(dayTotals);
+    }
+
+    let unsubscribeTasks = null; // Keep track of the current Firestore listener
+
+    function listenToTasksAndUpdate(uid, monthId, dayId) {
+      // Unsubscribe previous listener if any
+      if (typeof unsubscribeTasks === 'function') unsubscribeTasks();
+
+      // Listen to all days in the selected month
+      const daysRef = collection(db, 'users', uid, 'tasks');
+      const qy = query(daysRef, where('month', '==', monthId));
+      unsubscribeTasks = onSnapshot(qy, (snapDays) => {
+        // Build a map of dayId -> entries for fast lookup
+        const dayMap = {};
+        snapDays.forEach(d => {
+          dayMap[d.id] = d.data();
+        });
+
+        // Update KPIs for the month
+        recomputeAgentKpis(uid, monthId);
+
+        // Update today's table if the current day is in this month
+        if (dayMap[dayId]) {
+          renderToday(uid, dayId);
+        } else {
+          // If no entries for this day, clear the table
+          const tbody = document.getElementById('todayTable');
+          if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="muted">No entries for ${dayId}.</td></tr>`;
+        }
+      });
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -606,158 +909,26 @@
 
       // Init month picker default + recompute KPIs
       const mp = document.getElementById('monthPicker');
-      if (mp && !mp.value) mp.value = monthIdNow();
-      await recomputeAgentKpis(user.uid, (document.getElementById('monthPicker')?.value || monthIdNow()));
-
-      // Init day picker + first render
       const inp = document.getElementById('todayDay');
-      if (inp) {
-        const today = new Date();
-        if (!inp.value) inp.value = toDayId(today);
-        renderToday(user.uid, inp.value);
-        inp.addEventListener('change', () => {
-          if (inp.value) {
-            exitEditMode();
-            renderToday(user.uid, inp.value);
-          }
-        });
-      }
+      let currentMonth = (mp?.value || monthIdNow());
+      let currentDay = inp?.value || toDayId(new Date());
 
-      // Hook table click for edit/delete (event delegation)
-      const todayTable = document.getElementById('todayTable');
-      if (todayTable) {
-        todayTable.addEventListener('click', async (ev) => {
-          const btn = ev.target.closest('[data-action]');
-          if (!btn) return;
-          const action = btn.dataset.action;
-          const key = Number(btn.dataset.key || '0');
-          const dayId = document.getElementById('todayDay')?.value;
-          if (!dayId || !Number.isFinite(key)) return;
+      // Initial listen
+      listenToTasksAndUpdate(user.uid, currentMonth, currentDay);
 
-          const ref = doc(db, 'users', user.uid, 'tasks', dayId);
-          const snap = await getDoc(ref);
-          const data = snap.exists() ? snap.data() : {};
-          const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
-          entries.forEach(e => (e._keyMs = toMillisAny(e.createdAt ?? e.createdAtMs)));
-          const idx = entries.findIndex(e => e._keyMs === key);
-          if (idx < 0) return;
+      // Listen for month changes
+      mp?.addEventListener('change', (e) => {
+        currentMonth = mp.value;
+        listenToTasksAndUpdate(user.uid, currentMonth, currentDay);
+      });
 
-          if (action === 'edit') {
-            enterEditMode(entries[idx], dayId);
-          } else if (action === 'delete') {
-            if (!confirm('Delete this entry?')) return;
-            entries.splice(idx, 1);
-            const total = entries.reduce((s, e) => s + Number(e.count || 0), 0);
-            await setDoc(ref, {
-              date: dayId,
-              month: dayId.slice(0,7),
-              total,
-              entries: entries.map(({ _keyMs, ...rest }) => rest), // strip helper
-              updatedAt: serverTimestamp()
-            }, { merge: true });
-            // If deleting the one being edited, exit edit mode
-            if (editEntryKey === key && editEntryDay === dayId) exitEditMode();
-            renderToday(user.uid, dayId);
-            // NEW: recompute KPIs for that month
-            await recomputeAgentKpis(user.uid, dayId.slice(0,7));
-          }
-        });
-      }
+      // Listen for day changes
+      inp?.addEventListener('change', (e) => {
+        currentDay = inp.value;
+        listenToTasksAndUpdate(user.uid, currentMonth, currentDay);
+      });
 
-      // Intercept submit to save entry on the selected day (create or update)
-      const submitBtn = document.getElementById('btn-submit');
-      if (submitBtn && !submitBtn.dataset.dayPatch) {
-        submitBtn.dataset.dayPatch = '1';
-        ensureCancelEditButton()?.addEventListener('click', (e) => {
-          e.preventDefault();
-          exitEditMode();
-        });
-
-        submitBtn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-
-          const status = document.getElementById('submitStatus');
-          const activityEl = document.getElementById('activity');
-          const countEl = document.getElementById('count');
-          const difficultyEl = document.getElementById('difficulty');
-          const dayEl = document.getElementById('todayDay');
-
-          const activity = (activityEl?.value || '').trim();
-          const count = Math.max(1, Math.floor(Number(countEl?.value || 0)));
-          const difficulty = difficultyEl?.value || '';
-          const dayId = dayEl?.value;
-          const monthId = dayId?.slice(0, 7);
-
-          if (!activity || !count || !difficulty || !dayId) {
-            if (status) status.textContent = 'Fill all fields.';
-            return;
-          }
-
-          submitBtn.disabled = true;
-          if (status) status.textContent = editEntryKey ? 'Updating...' : 'Saving...';
-          try {
-            const ref = doc(db, 'users', user.uid, 'tasks', dayId);
-            const snap = await getDoc(ref);
-            const data = snap.exists() ? snap.data() : {};
-            const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
-
-            if (editEntryKey && editEntryDay === dayId) {
-              // Update existing entry matched by createdAt ms
-              let changed = false;
-              for (let i = 0; i < entries.length; i++) {
-                const keyMs = toMillisAny(entries[i].createdAt ?? entries[i].createdAtMs);
-                if (keyMs === editEntryKey) {
-                  entries[i] = {
-                    ...entries[i],
-                    activity,
-                    count,
-                    difficulty
-                    // keep createdAt as-is
-                  };
-                  changed = true;
-                  break;
-                }
-              }
-              if (!changed) {
-                // If not found (edge case), treat as new insert
-                entries.push({ activity, count, difficulty, createdAt: Date.now() });
-              }
-            } else {
-              // New insert
-              entries.push({ activity, count, difficulty, createdAt: Date.now() });
-            }
-
-            // NEW: strip UI helper before saving and compute total from sanitized list
-            const sanitized = entries.map(({ _keyMs, ...rest }) => rest);
-            const total = sanitized.reduce((s, e) => s + Number(e.count || 0), 0);
-
-            await setDoc(ref, {
-              date: dayId,
-              month: monthId,
-              total,
-              entries: sanitized,
-              updatedAt: serverTimestamp()
-            }, { merge: true });
-
-            if (status) status.textContent = editEntryKey ? 'Updated.' : 'Saved.';
-            setTimeout(() => { if (status) status.textContent = ''; }, 1200);
-
-            // Refresh the selected day’s table
-            renderToday(user.uid, dayId);
-
-            // Reset edit mode (and clear count only for convenience)
-            exitEditMode();
-            if (countEl) countEl.value = '';
-          } catch (err) {
-            if (status) status.textContent = err?.message || 'Error saving.';
-          } finally {
-            submitBtn.disabled = false;
-          }
-        }, { capture: true });
-      }
-
-      // Initialize month calendar with Flatpickr month grid (avoid redeclaring 'mp')
+      // Init month calendar with Flatpickr month grid (avoid redeclaring 'mp')
       const mpEl = document.getElementById('monthPicker');
       if (mpEl) {
         if (mpEl.type !== 'text') mpEl.type = 'text'; // prevent native month UI
@@ -772,17 +943,52 @@
       }
     });
 
-    // Sidebar toggle (ensure it exists here too)
-    document.getElementById('toggleSidebar')?.addEventListener('click', () => {
-      document.getElementById('sidebar')?.classList.toggle('open');
+    // Set today's date as default for the date picker in dd/mm/yyyy format
+    function setTodayDateInput() {
+      const todayInput = document.getElementById('todayDay');
+      if (todayInput) {
+        const now = new Date();
+        // Format as yyyy-mm-dd for input[type="date"]
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        todayInput.value = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+    setTodayDateInput();
+
+    // Defensive helper for addEventListener
+    function safeAddEventListener(id, event, handler) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener(event, handler);
+        return true;
+      }
+      return false;
+    }
+
+    // Defensive helper for setting textContent
+    function safeSetTextContent(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    // Remove any direct .addEventListener or .textContent assignments for elements that may not exist
+    // and use the helpers above everywhere in your script for all UI event bindings and status updates.
+
+    // Sidebar toggle
+    safeAddEventListener('toggleSidebar', 'click', () => {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.classList.toggle('open');
     });
 
-    // View switching (Dashboard <-> Profile) without leaving the page
+    // View switching (Dashboard <-> Profile)
     const navDashboard = document.getElementById('navDashboard');
     const navProfile = document.getElementById('navProfile');
     const dashboardPanel = document.getElementById('dashboardPanel');
     const profilePanel = document.getElementById('profilePanel');
 
+    // --- FIX: Move showDashboard/showProfile above their usage ---
     function showDashboard(e) {
       e?.preventDefault();
       dashboardPanel?.classList.remove('hidden');
@@ -798,22 +1004,180 @@
       navProfile?.classList.add('active');
     }
 
-    navDashboard?.addEventListener('click', showDashboard);
-    navProfile?.addEventListener('click', showProfile);
+    safeAddEventListener('navDashboard', 'click', showDashboard);
+    safeAddEventListener('navProfile', 'click', showProfile);
 
-    // Default: keep Dashboard visible on load
-    showDashboard();
-  </script>
-</body>
-</html>
-    navProfile?.addEventListener('click', showProfile);
+    // Import Excel button
+    safeAddEventListener('importExcelBtn', 'click', async function () {
+      const excelArea = document.getElementById('excelPaste');
+      const importStatus = document.getElementById('importStatus');
+      const dayEl = document.getElementById('todayDay');
+      if (!excelArea || !dayEl) return;
+      const raw = excelArea.value.trim();
+      if (!raw) {
+        safeSetTextContent('importStatus', "Paste some data first.");
+        return;
+      }
+      safeSetTextContent('importStatus', "Importing...");
+      try {
+        const user = (await import('./firebase-config.js')).auth.currentUser;
+        if (!user) throw new Error("Not logged in.");
+        const { db, doc, getDoc, setDoc, serverTimestamp } = await import('./firebase-config.js');
 
-    // Default: keep Dashboard visible on load
-    showDashboard();
-  </script>
-</body>
-</html>
-    
+        // --- Extract date from first line if present ---
+        let lines = raw.split('\n');
+        let importDate = null;
+        const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/;
+        if (lines.length > 0 && dateRegex.test(lines[0])) {
+          const match = lines[0].match(dateRegex);
+          if (match) {
+            // Convert to yyyy-mm-dd
+            const mm = match[1].padStart(2, '0');
+            const dd = match[2].padStart(2, '0');
+            const yyyy = match[3];
+            importDate = `${yyyy}-${mm}-${dd}`;
+          }
+          lines = lines.slice(1); // Remove the date line for further processing
+        }
+        // Fallback to selected date if no date found
+        const todayId = importDate || dayEl.value;
+        const monthId = todayId.slice(0, 7);
+        const ref = doc(db, 'users', user.uid, 'tasks', todayId);
+        const snap = await getDoc(ref);
+        const data = snap.exists() ? snap.data() : {};
+        const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+        let imported = 0;
+
+        // Only import activities with count > 0
+        lines.forEach(line => {
+          const cols = line.split('\t').map(s => s.trim()).filter(Boolean);
+          if (
+            cols.length >= 3 &&
+            /^\d+$/.test(cols[0]) &&
+            cols[1] &&
+            !isNaN(Number(cols[2])) &&
+            Number(cols[2]) > 0 // Only import if count > 0
+          ) {
+            entries.push({
+              activity: cols[1],
+              count: Math.floor(Number(cols[2])),
+              createdAt: Date.now() + imported
+            });
+            imported++;
+          }
+        });
+
+        if (imported === 0) {
+          safeSetTextContent('importStatus', "No valid activities found.");
+          return;
+        }
+        const sanitized = entries.map(({ _keyMs, ...rest }) => rest);
+        const total = sanitized.reduce((s, e) => s + Number(e.count || 0), 0);
+        await setDoc(ref, {
+          date: todayId,
+          month: monthId,
+          total,
+          entries: sanitized,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        safeSetTextContent('importStatus', `Imported ${imported} activities for ${todayId}!`);
+        excelArea.value = '';
+        if (dayEl.value !== todayId) {
+          dayEl.value = todayId;
+        }
+        renderToday(user.uid, todayId);
+      } catch (err) {
+        safeSetTextContent('importStatus', err?.message || "Import failed.");
+      }
+      setTimeout(() => { safeSetTextContent('importStatus', ''); }, 2000);
+    });
+
+    // Theme toggle logic
+    (function() {
+      const themeToggle = document.getElementById('themeToggle');
+      function getPreferredTheme() {
+        if (localStorage.getItem('theme')) return localStorage.getItem('theme');
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        themeToggle.checked = (theme === 'light');
+      }
+      setTheme(getPreferredTheme());
+      themeToggle.addEventListener('change', function() {
+        setTheme(this.checked ? 'light' : 'dark');
+      });
+    })();
+
+    // --- Add handler for manual task submission ---
+    safeAddEventListener('btn-submit', 'click', async function (e) {
+      e?.preventDefault?.();
+      const activityEl = document.getElementById('activity');
+      const countEl = document.getElementById('count');
+      const submitStatus = document.getElementById('submitStatus');
+      const dayEl = document.getElementById('todayDay');
+      if (!activityEl || !countEl || !dayEl) return;
+      const activity = activityEl.value.trim();
+      const count = Number(countEl.value);
+      const todayId = dayEl.value;
+      if (!activity) {
+        safeSetTextContent('submitStatus', "Please enter an activity name.");
+        return;
+      }
+      if (!Number.isFinite(count) || count < 1) {
+        safeSetTextContent('submitStatus', "Please enter a valid number completed.");
+        return;
+      }
+      safeSetTextContent('submitStatus', "Submitting...");
+      try {
+        const user = (await import('./firebase-config.js')).auth.currentUser;
+        if (!user) throw new Error("Not logged in.");
+        const { db, doc, getDoc, setDoc, serverTimestamp } = await import('./firebase-config.js');
+        // --- FIX: Use correct document reference (must be 4 segments) ---
+        // users/{uid}/tasks/{dayId}
+        if (!todayId) throw new Error("Please select a date.");
+        const ref = doc(db, 'users', user.uid, 'tasks', todayId);
+        const snap = await getDoc(ref);
+        const data = snap.exists() ? snap.data() : {};
+        const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
+        // If in edit mode, update the entry, else add new
+        if (window.editEntryKey && window.editEntryDay === todayId) {
+          const idx = entries.findIndex(e => toMillisAny(e.createdAt ?? e.createdAtMs) === window.editEntryKey);
+          if (idx >= 0) {
+            entries[idx].activity = activity;
+            entries[idx].count = count;
+            entries[idx].updatedAt = Date.now();
+          }
+          window.editEntryKey = null;
+          window.editEntryDay = null;
+        } else {
+          entries.push({
+            activity,
+            count,
+            createdAt: Date.now()
+          });
+        }
+        const sanitized = entries.map(({ _keyMs, ...rest }) => rest);
+        const total = sanitized.reduce((s, e) => s + Number(e.count || 0), 0);
+        await setDoc(ref, {
+          date: todayId,
+          month: todayId.slice(0, 7),
+          total,
+          entries: sanitized,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        safeSetTextContent('submitStatus', "Task submitted!");
+        activityEl.value = '';
+        countEl.value = '';
+        // Refresh Today's Activity and Monthly Entries
+        renderToday(user.uid, todayId);
+        await recomputeAgentKpis(user.uid, todayId.slice(0, 7));
+      } catch (err) {
+        safeSetTextContent('submitStatus', err?.message || "Submit failed.");
+      }
+      setTimeout(() => { safeSetTextContent('submitStatus', ''); }, 2000);
+    });
   </script>
 </body>
 </html>

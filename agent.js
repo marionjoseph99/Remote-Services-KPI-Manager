@@ -279,6 +279,60 @@ function initHandlers() {
     if (!val || !uid) return;
     listenMonth(uid, val);
   });
+
+  // New event listener for processing pasted Excel data
+  document.getElementById('process-data-btn').addEventListener('click', async function() {
+    const textarea = document.getElementById('excel-paste-area');
+    const feedback = document.getElementById('process-feedback');
+    const rawData = textarea.value.trim();
+
+    if (!rawData) {
+        feedback.textContent = "Please paste some data first.";
+        return;
+    }
+
+    // Split into rows
+    const rows = rawData.split('\n').filter(row => row.trim() !== '');
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let row of rows) {
+        // Split by tab
+        const cols = row.split('\t');
+        // Ensure at least two columns: activityName and numberCompleted
+        if (cols.length < 2) {
+            failCount++;
+            continue;
+        }
+        const activityName = cols[0].trim();
+        const numberCompleted = parseInt(cols[1].replace(/,/g, '').trim(), 10);
+        // If there are more columns, you can extract them here as needed
+
+        if (!activityName || isNaN(numberCompleted)) {
+            failCount++;
+            continue;
+        }
+
+        // Prepare the object for Firebase
+        const submission = {
+            activityName,
+            numberCompleted,
+            difficulty: "not specified", // Default value
+            timestamp: new Date(),
+            uid: firebase.auth().currentUser ? firebase.auth().currentUser.uid : null
+        };
+
+        try {
+            await addDoc(collection(db, 'user-submissions'), submission);
+            successCount++;
+        } catch (err) {
+            failCount++;
+        }
+    }
+
+    textarea.value = '';
+    feedback.textContent = `Activities logged successfully! (${successCount} succeeded, ${failCount} failed)`;
+});
 }
 
 onAuthStateChanged(auth, async (user) => {

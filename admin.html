@@ -396,10 +396,18 @@
     .agent-meta .name { font-weight: 700; letter-spacing: .1px; }
     .agent-meta .sub { color: #cfd2df; font-size: 12px; }
     .rank-ribbon {
-      position: absolute; top: -8px; right: -8px;
-      background: #94a3b8; color: #0b0f1c; font-weight: 800;
-      border-radius: 999px; padding: 6px 10px; font-size: 12px;
+      width: 38px;
+      position: absolute; 
+      top: 0px; 
+      right: 37px;
+      background: #94a3b8; 
+      color: #0b0f1c; 
+      font-weight: 800;
+      border-bottom-left-radius: 14px;
+      padding: 6px 10px; 
+      font-size: 12px;
       box-shadow: 0 6px 14px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.35);
+      white-space: nowrap; /* Prevent ribbon from wrapping */
     }
     .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
     .rank-2 { background: linear-gradient(135deg, #e5e7eb, #c7c9d3); }
@@ -411,10 +419,18 @@
       background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb;
     }
     .overall-badge {
+      width: 38px;
+      position: absolute; 
+      top: 0px; 
+      right: 0px;
       align-self: flex-start;
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 999px; font-weight: 800;
+      padding: 6px 6px; 
+      border-top-right-radius: 14px;
+      font-weight: 300;
+      font-size: 12px;
       color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.35);
     }
     .overall-badge.bad   { background: linear-gradient(90deg, #ef4444, #b91c1c); }
     .overall-badge.ok    { background: linear-gradient(90deg, #f59e0b, #d97706); }
@@ -423,6 +439,208 @@
 
     /* Hide old table (kept for fallback) */
     .top10-table-hidden { display: none !important; }
+
+    /* Collapsible animation for Top 10 Agents */
+    .collapsible-container {
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(.4,0,.2,1), opacity 0.35s cubic-bezier(.4,0,.2,1);
+      max-height: 1200px; /* enough for content */
+      opacity: 1;
+      will-change: max-height, opacity;
+    }
+    .collapsible-container.collapsed {
+      max-height: 0 !important;
+      opacity: 0;
+      pointer-events: none;
+    }
+    /* Optional: style for the collapse button */
+    #btnTop10Collapse {
+      background: none;
+      border: none;
+      color: var(--accent, #a78bfa);
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 0 8px;
+      margin-left: 8px;
+      transition: color 0.2s;
+      vertical-align: middle;
+    }
+    #btnTop10Collapse[aria-expanded="true"] { color: #fff; }
+    #btnTop10Collapse .arrow {
+      display: inline-block;
+      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+      margin-left: 2px;
+    }
+    #btnTop10Collapse[aria-expanded="true"] .arrow {
+      transform: rotate(90deg);
+    }
+
+    /* Light theme variables */
+    :root[data-theme='light'] {
+      --card: #f8fafc;
+      --panel: #f1f5f9;
+      --text: #1e293b;
+      --accent: #6366f1;
+      --accent-2: #a78bfa;
+      --danger: #ef4444;
+      --danger-hover: #f05252;
+      --shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    [data-theme='light'] body.admin-page {
+      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+      color: var(--text);
+    }
+    [data-theme='light'] .sidebar,
+    [data-theme='light'] .main,
+    [data-theme='light'] .topbar,
+    [data-theme='light'] .card {
+      background-color: var(--card, #fff) !important;
+      color: var(--text, #1e293b);
+      box-shadow: var(--shadow, none);
+    }
+    [data-theme='light'] .progress-tile,
+    [data-theme='light'] .circle-inner {
+      background: var(--panel, #f1f5f9) !important;
+      color: var(--text, #1e293b);
+    }
+    [data-theme='light'] .circle-progress {
+      background: conic-gradient(var(--accent) calc(var(--p, 0) * 1%), #e5e7eb 0);
+      color: var(--text, #1e293b);
+    }
+    [data-theme='light'] .badge {
+      background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+      color: #3730a3;
+    }
+    [data-theme='light'] .btn,
+    [data-theme='light'] .btn.secondary {
+      background: #6366f1;
+      color: #fff;
+    }
+    [data-theme='light'] .btn.danger {
+      background: #ef4444;
+      color: #fff;
+    }
+    [data-theme='light'] .btn.secondary {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    [data-theme='light'] .muted {
+      color: #64748b;
+    }
+    [data-theme='light'] .table thead th,
+    [data-theme='light'] .table tbody td {
+      color: #334155;
+      background: transparent;
+    }
+    [data-theme='light'] .table {
+      background: transparent;
+    }
+    [data-theme='light'] input,
+    [data-theme='light'] select {
+      background: #fff;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+    }
+    [data-theme='light'] .sidebar .brand .title {
+      color: #3730a3;
+    }
+    [data-theme='light'] .sidebar .brand .dot {
+      background: #6366f1;
+    }
+
+    
+    .theme-switch-toggle .switch {
+      position: relative;
+      width: 70px;
+      height: 32px;
+      background: #23263a;
+      border-radius: 999px;
+      border: 1.5px solid #e5e7eb;
+      transition: background 0.2s, border 0.2s;
+      display: flex;
+      align-items: center;
+    }
+    .theme-switch-toggle input[type="checkbox"] {
+      appearance: none;
+      width: 70px;
+      height: 32px;
+      margin: 0;
+      position: absolute;
+      left: 0; top: 0;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+    .theme-switch-toggle .slider {
+      position: absolute;
+      left: 0; top: 0;
+      width: 70px;
+      height: 32px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      transition: background 0.2s;
+      z-index: 1;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .slider {
+      background: #23263a;
+    }
+    .theme-switch-toggle .thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: left 0.22s cubic-bezier(.4,0,.2,1), background 0.2s;
+      z-index: 3;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .thumb {
+      left: 41px;
+      background: #fff;
+    }
+    .theme-switch-toggle .thumb .moon {
+      display: block;
+      color: #fbbf24;
+      font-size: 18px;
+      filter: drop-shadow(0 0 1px #fbbf24);
+      background-color: #0a0d18;
+      border-radius: 100%;
+    }
+    .theme-switch-toggle .thumb .sun {
+      display: none;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .thumb .moon {
+      display: none;
+    }
+    .theme-switch-toggle input[type="checkbox"]:checked ~ .thumb .sun {
+      display: block;
+      color: #fbbf24;
+      font-size: 18px;
+      filter: drop-shadow(0 0 1px #fbbf24);
+    }
+    .theme-switch-toggle .icon-sun,
+    .theme-switch-toggle .icon-moon {
+      font-size: 18px;
+      margin: 0 2px;
+      opacity: 0.85;
+      pointer-events: none;
+      transition: color 0.2s, opacity 0.2s;
+    }
+    .theme-switch-toggle .icon-sun {
+      color: #fbbf24;
+      margin-right: 6px;
+    }
+    .theme-switch-toggle .icon-moon {
+      color: #64748b;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
@@ -454,12 +672,13 @@
 
       <div class="sidebar-spacer"></div>
       <button id="btn-logout" class="btn danger">Logout</button>
+      <!-- Version Info button will be injected here -->
     </aside>
 
     <main class="main">
-      <div class="topbar">
-        <button class="hamburger" id="toggleSidebar">☰ Menu</button>
-        <div style="display:flex; gap:10px; align-items:center;">
+      <div class="topbar" style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="hamburger" id="toggleSidebar">☰ Menu</button>
           <span class="badge">Admin</span>
           <input type="month" id="adminMonth" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
           <!-- NEW: Generate Report dropdown -->
@@ -471,34 +690,52 @@
             </div>
           </div>
         </div>
+        <!-- Theme switch toggle in main panel top right -->
+        <label class="theme-switch-toggle" title="Toggle light/dark mode">
+          <span class="switch">
+            <input type="checkbox" id="themeToggle" />
+            <span class="slider"></span>
+            <span class="thumb">
+              <span class="moon">&#127769;</span>
+              <span class="sun">&#9728;</span>
+            </span>
+          </span>
+        </label>
       </div>
 
       <!-- Overview content (shown by default) -->
       <div id="overviewPanel">
         <!-- Top 10 Agents card -->
         <div class="card">
-          <h2>Top 10 Agents (Overall Performance)</h2>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2 style="margin:0;">Top 10 Agents (Overall Performance)</h2>
+            <button id="btnTop10Collapse" aria-expanded="true" aria-controls="top10Collapsible" title="Show/Hide Top 10">
+              <span>Collapse</span>
+              <span class="arrow" style="font-size:18px;">&#9654;</span>
+            </button>
+          </div>
           <div class="muted">Month: <span id="top10Month"></span></div>
 
-          <!-- NEW: card grid -->
-          <div id="top10Grid" class="top10-grid"></div>
-
-          <!-- Keep old table but hide -->
-          <table class="table top10 top10-table-hidden" style="margin-top:8px;">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Client</th>
-                <th>Position</th>
-                <th>Tasks</th>
-                <th>Attendance</th>
-                <th>Attitude</th>
-                <th>Overall</th>
-              </tr>
-            </thead>
-            <tbody id="top10Table"></tbody>
-          </table>
+          <!-- Collapsible content wrapper -->
+          <div id="top10Collapsible" class="collapsible-container collapsed">
+            <div id="top10Grid" class="top10-grid"></div>
+            <!-- Keep old table but hide -->
+            <table class="table top10 top10-table-hidden" style="margin-top:8px;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Client</th>
+                  <th>Position</th>
+                  <th>Tasks</th>
+                  <th>Attendance</th>
+                  <th>Attitude</th>
+                  <th>Overall</th>
+                </tr>
+              </thead>
+              <tbody id="top10Table"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- CHANGE: use 30/70 layout -->
@@ -671,6 +908,88 @@
       obs = new MutationObserver(selectFirst);
       obs.observe(list, { childList: true });
     })();
+  </script>
+
+  <!-- Smooth slide animation for Top 10 Agents collapsible -->
+  <script>
+    (function() {
+      const btn = document.getElementById('btnTop10Collapse');
+      const container = document.getElementById('top10Collapsible');
+      if (!btn || !container) return;
+
+      // Helper to set max-height for smooth transition
+      function setMaxHeight(expand) {
+        if (expand) {
+          container.classList.remove('collapsed');
+          container.style.maxHeight = container.scrollHeight + 'px';
+          container.style.opacity = '1';
+        } else {
+          container.style.maxHeight = container.scrollHeight + 'px';
+          void container.offsetHeight;
+          container.classList.add('collapsed');
+          container.style.maxHeight = '0px';
+          container.style.opacity = '0';
+        }
+      }
+
+      // Initial state: collapsed
+      btn.setAttribute('aria-expanded', 'false');
+      setMaxHeight(false);
+
+      function toggleCollapse(e) {
+        e?.preventDefault();
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        setMaxHeight(!expanded);
+      }
+
+      // Button toggles
+      btn.addEventListener('click', toggleCollapse);
+
+      // Also allow clicking the card header (h2) to toggle
+      const cardHeader = btn.parentElement?.querySelector('h2');
+      if (cardHeader) {
+        cardHeader.style.cursor = 'pointer';
+        cardHeader.addEventListener('click', toggleCollapse);
+      }
+
+      // On transition end, if collapsed, remove max-height for accessibility
+      container.addEventListener('transitionend', function() {
+        if (container.classList.contains('collapsed')) {
+          container.style.maxHeight = '0px';
+        } else {
+          container.style.maxHeight = '';
+        }
+      });
+    })();
+  </script>
+
+  <script>
+    // Theme toggle logic
+    (function() {
+      const themeToggle = document.getElementById('themeToggle');
+      function getPreferredTheme() {
+        if (localStorage.getItem('theme')) return localStorage.getItem('theme');
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        themeToggle.checked = (theme === 'light');
+      }
+      setTheme(getPreferredTheme());
+      themeToggle.addEventListener('change', function() {
+        setTheme(this.checked ? 'light' : 'dark');
+      });
+    })();
+  </script>
+  <script type="module">
+    import { injectVersionButton } from './version-info.js';
+    injectVersionButton();
+  </script>
+</body>
+</html>
+    
   </script>
 </body>
 </html>
