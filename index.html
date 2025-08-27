@@ -247,16 +247,19 @@
               <input id="login-email" type="email" placeholder="you@example.com" required />
             </div>
             <div class="input">
-              <label for="login-password">Password</label>
+              <label for="login-password" style="margin-top: 5px;">Password</label>
               <input id="login-password" type="password" placeholder="••••••••" required />
             </div>
-            <div class="input" style="margin-top:-6px; text-align:right;">
-              <a id="link-forgot" href="#" style="color: var(--accent); font-size: 12px;">Forgot password?</a>
-            </div>
-            <button id="btn-login" class="btn block">Sign In</button>
+            
+            <button id="btn-login" class="btn block" style="margin-top: 15px;">Sign In</button>
             <div style="margin-top:10px; text-align:center; color: var(--muted);">
               Bago ka dito 'te?
               <a id="to-register" href="#" style="color: var(--accent)">Create an account</a>
+            </div>
+
+            <div style="margin-top:10px; text-align:center; color: var(--muted);">
+              Limot agad password?
+              <a id="link-forgot" href="#" style="color: var(--accent)">Forgot password?</a>
             </div>
           </div>
 
@@ -322,7 +325,7 @@
           </div>
         </div>
 
-        <div id="auth-error" class="badge" style="display:none; margin-top:12px; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.12); color: #fff;"></div>
+        <div id="auth-error" class="badge" style="display:none; margin-top:12px; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.12); color: #fff; align-items: center; align-content: center; text-align: center;"></div>
       </div>
     </div>
   </div>

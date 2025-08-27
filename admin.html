@@ -652,23 +652,10 @@
       </div>
       <div class="nav">
         <a href="#" id="btnOverview" class="active">Overview</a>
-        <button id="btnToggleAdv">Advanced Settings</button>
+        <button id="btnToggleAdv">Monthly Target Task</button>
+        <!-- Only Overview and Advanced Settings nav items remain -->
       </div>
 
-      <!-- removed Metrics Snapshot card -->
-      <!--
-      <div class="card">
-        <div class="muted">Metrics Snapshot</div>
-        <div class="kpi" style="margin-top:8px;">
-          <div class="value" id="snapTargetTasks">per-position</div>
-          <div class="label">Target Tasks</div>
-        </div>
-        <div class="kpi">
-          <div class="value" id="snapAttendance">-</div>
-          <div class="label">Attendance Target</div>
-        </div>
-      </div>
-      -->
 
       <div class="sidebar-spacer"></div>
       <button id="btn-logout" class="btn danger">Logout</button>
@@ -754,24 +741,26 @@
             </div>
 
             <!-- REPLACED: Progress tile in its own card + another card next to it -->
-            <div id="kpiPair" class="grid two" style="margin-top:12px;">
-              <div class="card task-progress-card">
+            <div id="kpiPair" class="grid two" style="margin-top:12px; display: grid; grid-template-columns: 0.7fr 2.2fr; gap: 18px;">
+              <div class="card task-progress-card" style="min-width: 180px; max-width: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <h3>Task Progress</h3>
-                <div class="progress-tile" id="taskProgressTile" style="margin-top:8px;">
-                  <div class="circle-progress" id="taskProgress" style="--p: 0;">
-                    <div class="circle-inner">
-                      <div id="taskProgressPct">0%</div>
+                <div class="progress-tile" id="taskProgressTile" style="margin-top:8px; width: 100%; display: flex; justify-content: center;">
+                  <div class="circle-progress" id="taskProgress" style="--p: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div class="circle-inner" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                      <div id="taskProgressPct" style="font-size: 1.5em; font-weight: 700;">0%</div>
+                      <div style="font-size: 13px; margin-top: 2px;">This month</div>
+                      <div style="font-size: 13px;">
+                        <span id="detailTotal">0</span> / <span id="detailTarget">-</span>
+                      </div>
+                      <div style="font-size: 12px; color: #a3a3a3;">
+                        Remain: <span id="detailToTarget">-</span>
+                      </div>
                     </div>
-                  </div>
-                  <div class="progress-meta">
-                    <div class="progress-title">This month</div>
-                    <div class="muted">Tasks: <span id="detailTotal">0</span></div>
-                    <div class="muted">Target: <span id="detailTarget">-</span> • Remaining: <span id="detailToTarget">-</span></div>
                   </div>
                 </div>
               </div>
 
-              <div class="card">
+              <div class="card" style="min-width: 0; flex: 1 1 0%;">
                 <h3>Summary</h3>
                 <!-- REPLACED: bar chart canvas for monthly daily totals -->
                 <canvas id="summaryBar" style="margin-top:8px;"></canvas>
@@ -871,6 +860,7 @@
         </div>
         <button id="btnSavePosTargets" class="btn" style="margin-top:12px;">Save Targets</button>
         <div id="savePosStatus" class="muted" style="margin-top:8px;"></div>
+        <!-- Performance Weights section is injected by JS -->
       </div>
     </main>
   </div>
@@ -989,7 +979,6 @@
   </script>
 </body>
 </html>
-    
-  </script>
-</body>
+</html>
+</html>
 </html>

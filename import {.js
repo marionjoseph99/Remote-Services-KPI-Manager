@@ -25,9 +25,8 @@ const advPanel = $('#advPanel');
 const btnOverview = $('#btnOverview');
 const overviewPanel = $('#overviewPanel');
 
-// New: Performance Weights panel/button (created if missing)
-let btnToggleWeights = document.getElementById('btnToggleWeights');
-let weightsPanel = document.getElementById('weightsPanel');
+// Performance Weights section will be injected into Advanced Settings only
+let weightsPanel = null;
 
 // Per-position targets
 const posInputs = () => Array.from(document.querySelectorAll('.pos-target'));
@@ -306,10 +305,8 @@ if (!window.updateLeaderboardVisibility) {
 function showAdv() {
   advPanel?.classList.remove('hidden');
   overviewPanel?.classList.add('hidden');
-  weightsPanel?.classList.add('hidden');
   btnToggleAdv?.classList.add('active');
   btnOverview?.classList.remove('active');
-  btnToggleWeights?.classList.remove('active');
   // Ensure the new positions are present when opening Advanced Settings
   ensurePositionInputs();
   window.updateLeaderboardVisibility?.();
@@ -318,20 +315,7 @@ function showAdv() {
 function showOverview() {
   advPanel?.classList.add('hidden');
   overviewPanel?.classList.remove('hidden');
-  weightsPanel?.classList.add('hidden');
   btnOverview?.classList.add('active');
-  btnToggleAdv?.classList.remove('active');
-  btnToggleWeights?.classList.remove('active');
-  window.updateLeaderboardVisibility?.();
-}
-
-function showWeights() {
-  ensureWeightsPanel();
-  advPanel?.classList.add('hidden');
-  overviewPanel?.classList.add('hidden');
-  weightsPanel?.classList.remove('hidden');
-  btnToggleWeights?.classList.add('active');
-  btnOverview?.classList.remove('active');
   btnToggleAdv?.classList.remove('active');
   window.updateLeaderboardVisibility?.();
 }
@@ -347,48 +331,18 @@ btnOverview?.addEventListener('click', (e) => {
   showOverview();
 });
 
-// Ensure a sidebar button for Performance Weights exists
-function ensureWeightsNavButton() {
-  if (btnToggleWeights) return;
-  const nav = btnToggleAdv?.parentElement; // same container as other nav buttons
-  if (!nav) return;
+// Removed ensureWeightsNavButton: no sidebar button for Performance Weights
 
-  btnToggleWeights = document.createElement('button');
-  btnToggleWeights.id = 'btnToggleWeights';
-  btnToggleWeights.textContent = 'Performance Weights';
-
-  // SAFE INSERT: only insertBefore if the reference is a child of nav
-  const logout = document.getElementById('btn-logout');
-  if (logout && logout.parentElement === nav) {
-    nav.insertBefore(btnToggleWeights, logout);
-  } else {
-    nav.appendChild(btnToggleWeights);
-  }
-
-  btnToggleWeights.addEventListener('click', (e) => {
-    e.preventDefault();
-    showWeights();
-    weightsPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-}
-
-// Ensure a main panel card exists for weights
+// Ensure a container for weights inside Advanced Settings
 function ensureWeightsPanel() {
   if (weightsPanel) return;
-  const main = overviewPanel?.parentElement; // main element
-  if (!main) return;
+  if (!advPanel) return;
   weightsPanel = document.createElement('div');
   weightsPanel.id = 'weightsPanel';
-  weightsPanel.className = 'card hidden';
+  weightsPanel.className = 'card';
   weightsPanel.style.marginTop = '16px';
-  // Minimal header; body will be built by buildPerfWeightsUI()
   weightsPanel.innerHTML = `<h2>Performance Weights</h2>`;
-  // Insert after advPanel if present, otherwise append
-  if (advPanel && advPanel.parentElement === main) {
-    main.insertBefore(weightsPanel, advPanel.nextSibling);
-  } else {
-    main.appendChild(weightsPanel);
-  }
+  advPanel.parentNode?.insertBefore(weightsPanel, advPanel.nextSibling); // Insert weightsPanel after advPanel
 }
 
 // New positions to add into Advanced Settings > per-position targets
@@ -1415,8 +1369,16 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // Prepare panels and buttons
-  ensureWeightsNavButton();
   ensureWeightsPanel();
+  // Move advPanel above weightsPanel if both exist
+  if (advPanel && weightsPanel && advPanel.parentNode === weightsPanel.parentNode) {
+    weightsPanel.parentNode.insertBefore(advPanel, weightsPanel);
+  }
+  // Remove btnToggleAdv if advPanel was moved
+  if (btnToggleAdv && btnToggleAdv.parentNode) {
+    btnToggleAdv.parentNode.removeChild(btnToggleAdv);
+  }
+
   // Default to Overview on load
   showOverview();
   setMonthToCurrent();
