@@ -667,3 +667,9 @@ span.flatpickr-weekday {
   box-shadow: 0 6px 16px rgba(167,139,250,0.25);
 }
 
+
+.meta {
+display: none;
+}
+
+

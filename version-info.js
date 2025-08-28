@@ -107,7 +107,7 @@ function showVersionModal() {
       box-shadow: 0 8px 32px rgba(0,0,0,0.18);
       padding: 32px 28px 22px 28px;
       width: 400px;
-      min-height: 320px;
+      min-height: 420px;
       font-family: 'Lexend', system-ui, sans-serif;
       position: relative;
       display: flex;
@@ -166,8 +166,8 @@ function showVersionModal() {
           display: flex;
           align-items: center;
         ">
-          <span>Show Credits</span>
-          <span id="creditsArrow" style="display:inline-block; margin-left:6px; transition:transform 0.2s;">▼</span>
+          <span style="position:absolute; bottom:15px; right:30px; margin-top:15px">Show Credits</span>
+
         </button>
         <div id="versionCredits" style="
           border-top: 1px solid #444;
@@ -196,6 +196,9 @@ function showVersionModal() {
     <style>
       #versionBtnRow::-webkit-scrollbar { display: none; }
       #versionBtnRow { scrollbar-width: none; -ms-overflow-style: none; }
+      #creditsArrow{
+      display: none;
+      }
       .ver-btn {
         background: #23263a;
         color: #fff;
@@ -249,10 +252,22 @@ function showVersionModal() {
   // Collapsible credits logic with animation
   const creditsBtn = document.getElementById('toggleCredits');
   const creditsDiv = document.getElementById('versionCredits');
-  const creditsArrow = document.getElementById('creditsArrow');
+  // Ensure there is an arrow element for animation
+  let creditsArrow = document.getElementById('creditsArrow');
+  if (!creditsArrow && creditsBtn) {
+    creditsArrow = document.createElement('span');
+    creditsArrow.id = 'creditsArrow';
+    creditsArrow.style.display = 'inline-block';
+    creditsArrow.style.transition = 'transform 0.32s cubic-bezier(.4,0,.2,1)';
+    creditsArrow.style.marginLeft = '8px';
+    creditsArrow.style.fontSize = '16px';
+    creditsArrow.innerHTML = '';
+    creditsBtn.appendChild(creditsArrow);
+  }
   let creditsOpen = false;
   function setCredits(open) {
     creditsOpen = open;
+    if (!creditsDiv || !creditsBtn || !creditsArrow) return;
     if (open) {
       creditsDiv.style.display = 'block';
       setTimeout(() => {
@@ -266,17 +281,19 @@ function showVersionModal() {
         if (!creditsOpen) creditsDiv.style.display = 'none';
       }, 320);
     }
-    creditsBtn.querySelector('span').textContent = open ? 'Hide Credits' : 'Show Credits';
+    const labelSpan = creditsBtn.querySelector('span');
+    if (labelSpan) labelSpan.textContent = open ? 'Hide Credits' : 'Show Credits';
     creditsArrow.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
   }
-  creditsBtn.onclick = () => setCredits(!creditsOpen);
+  if (creditsBtn) creditsBtn.onclick = () => setCredits(!creditsOpen);
   setCredits(false);
 
   // Remove close button (do not render it)
-  // Close on click outside modal content
+  // Close on click outside modal content (on overlay only)
   modal.addEventListener('mousedown', function (e) {
     const content = document.getElementById('versionModalContent');
-    if (e.target === modal) closeVersionModal();
+    // If click is outside the modal content, close
+    if (content && !content.contains(e.target)) closeVersionModal();
   });
 
   function closeVersionModal() {

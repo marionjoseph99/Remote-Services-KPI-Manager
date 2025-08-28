@@ -301,6 +301,44 @@
       color: #64748b;
       margin-left: 6px;
     }
+
+    /* Custom scrollbar for scrollable cards (Agent) */
+    .card.scrollable {
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent, #a78bfa) rgba(0,0,0,0.08);
+      overflow-y: auto;
+    }
+    .card.scrollable::-webkit-scrollbar {
+      width: 8px;
+      background: transparent;
+      transition: background 0.2s;
+    }
+    .card.scrollable::-webkit-scrollbar-thumb {
+      background: rgba(167,139,250,0.18);
+      border-radius: 8px;
+      transition: background 0.2s;
+      opacity: 0;
+    }
+    .card.scrollable:hover::-webkit-scrollbar-thumb {
+      background: rgba(167,139,250,0.45);
+      opacity: 1;
+    }
+    .card.scrollable::-webkit-scrollbar-thumb {
+      opacity: 0;
+    }
+    .card.scrollable:hover::-webkit-scrollbar-thumb {
+      opacity: 1;
+    }
+    .card.scrollable::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    /* Hide scrollbar when not hovered (Firefox) */
+    .card.scrollable {
+      scrollbar-color: transparent transparent;
+    }
+    .card.scrollable:hover {
+      scrollbar-color: var(--accent, #a78bfa) rgba(0,0,0,0.08);
+    }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -346,51 +384,63 @@
       <!-- NEW: Dashboard view wrapper -->
       <div id="dashboardPanel">
         <!-- NEW: KPI Overview - now in a single row -->
-        <div class="grid four" style="margin-top:12px;">
-          <div class="card">
-            <h2>Task Progress</h2>
-            <div class="progress-tile" id="agTaskProgressTile" style="margin-top:8px;">
-              <div class="circle-progress" id="agTaskProgress" style="--p: 0;">
+        <div class="grid three" style="margin-top:12px; grid-template-columns: .50fr .50fr 1.2fr; gap: 18px;">
+          <!-- Combined Task Progress & Task Created Card -->
+           <!-- Overall Performance Card -->
+          <div class="card kpi-card" style="padding:24px 24px 18px 24px; min-height:220px; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="font-size:1.1rem; font-weight:600; color:#fff; letter-spacing:0.01em;">Overall Performance</div>
+              <div class="kpi" style="margin-top:18px;">
+                <div class="value" id="agOverallPct" style="font-size:2.1rem; color:#a78bfa;">0%</div>
+                <div class="label" style="font-size:1rem; color:#fff;">Task 50% • Attendance 30% • Attitude 20%</div>
+              </div>
+            </div>
+            <div class="muted" id="agOverallMsg" style="margin-top:18px;"></div>
+          </div>
+          <div class="card kpi-card" style="padding:0; display:flex; flex-direction:column; justify-content:space-between; min-height:220px;">
+            <div style="display:flex; align-items:center; gap:18px; padding:24px 24px 0 24px;">
+
+              
+              <div class="circle-progress" id="agTaskProgress" style="--p: 0; min-width:90px; width:90px; height:90px;">
                 <div class="circle-inner">
-                  <div id="agTaskProgressPct">0%</div>
+                  <div id="agTaskProgressPct" style="font-size:1.5rem;">0%</div>
                 </div>
               </div>
-              <div class="progress-meta">
-                <div class="progress-title">This month</div>
-                <div class="muted">Tasks: <span id="agDetailTotal">0</span></div>
-                <div class="muted">Target: <span id="agDetailTarget">-</span> • Remaining: <span id="agDetailToTarget">-</span></div>
+              <div style="flex:1;">
+                <div style="font-size:1.1rem; font-weight:600; color:#fff; letter-spacing:0.01em;">Task Progress</div>
+                <div class="muted" style="margin-top:2px;">This month</div>
+                <div class="muted" style="margin-top:2px;">Tasks: <span id="agDetailTotal">0</span></div>
+                <div class="muted" style="margin-top:2px;">Target: <span id="agDetailTarget">-</span> • Remaining: <span id="agDetailToTarget">-</span></div>
+              </div>
+            </div>
+            <div style="background:#23263a; border-radius:0 0 18px 18px; padding:18px 24px 14px 24px; margin-top:18px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div style="font-size:1.05rem; font-weight:600; color:#a78bfa;">Task Created</div>
+                  <div class="muted" id="agTaskMeta" style="margin-top:2px;">0 / 0</div>
+                  <div class="muted" id="agTaskMsg" style="margin-top:6px;"></div>
+                </div>
+                <div class="kpi" style="margin-left:18px;">
+                  <div class="value" id="agTaskPct" style="color:#fff; font-size:1.4rem;">0%</div>
+                  <div class="label" style="font-size:0.95rem; color:#a78bfa;">vs target</div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="card">
-            <h2>Summary</h2>
-            <canvas id="agSummaryBar" style="margin-top:8px;"></canvas>
+          <!-- Summary Card (unchanged) -->
+          <div class="card kpi-card" style="padding:24px 24px 18px 24px; min-height:220px;">
+            <div style="font-size:1.1rem; font-weight:600; color:#fff; letter-spacing:0.01em;">Summary</div>
+            <canvas id="agSummaryBar" style="margin-top:18px;"></canvas>
           </div>
 
-          <div class="card">
-            <h2>Overall Performance</h2>
-            <div class="kpi">
-              <div class="value" id="agOverallPct">0%</div>
-              <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
-            </div>
-            <div class="muted" id="agOverallMsg" style="margin-top:8px;"></div>
-          </div>
-
-          <div class="card">
-            <h2>Task Created</h2>
-            <div class="kpi">
-              <div class="value" id="agTaskPct">0%</div>
-              <div class="label">vs monthly target</div>
-            </div>
-            <div class="muted" id="agTaskMeta" style="margin-top:6px;">0 / 0</div>
-            <div class="muted" id="agTaskMsg" style="margin-top:8px;"></div>
-          </div>
+          
         </div>
+
 
         <div class="grid three" style="display:grid; grid-template-columns: 0.7fr 1.3fr 1.3fr; gap:18px; margin-top:18px;">
           <!-- Submit Task container -->
-          <div class="card" style="max-width:320px; min-width:220px; flex: 0 0 260px;">
+          <div class="card scrollable" style="max-height:700px; overflow-y:auto;">
             <h2>Submit Task Manually</h2>
             <p class="muted">Log activities to update your KPIs in real time.</p>
             <div class="form-row" style="margin-top:10px; flex-direction:column; gap:14px; display:flex;">
@@ -442,7 +492,7 @@
           </div>
 
           <!-- Today's Activity container -->
-          <div class="card">
+          <div class="card scrollable" style="max-height:700px; overflow-y:auto;">
             <div style="display:flex; align-items:center; justify-content:space-between;">
               <h2>Today's Activity</h2>
               <input type="date" id="todayDay" class="input" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
@@ -456,7 +506,7 @@
           </div>
 
           <!-- Monthly Entries container -->
-          <div class="card">
+          <div class="card scrollable" style="max-height:700px; overflow-y:auto;">
             <div style="display:flex; align-items:center; justify-content:space-between;">
               <h2>Monthly Entries</h2>
               <input type="month" id="monthPicker" class="input" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
@@ -472,7 +522,7 @@
       </div>
 
       <!-- NEW: Profile view wrapper (hidden by default) -->
-      <div id="profilePanel" class="card hidden" style="margin-top:16px;">
+      <div id="profilePanel" class="card scrollable hidden" style="margin-top:16px; max-height:720px; overflow-y:auto;">
         <h2>Your Profile</h2>
         <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
           <span class="badge">Name: <strong id="profName" style="margin-left:6px;">-</strong></span>
@@ -602,16 +652,30 @@
               const ts = new Date(e._keyMs || Date.now());
               const hh = String(ts.getHours()).padStart(2, '0');
               const mm = String(ts.getMinutes()).padStart(2, '0');
-              return `
-                <tr data-key="${e._keyMs}">
-                  <td>${hh}:${mm}</td>
-                  <td>${e.activity || '-'}</td>
-                  <td>${Number(e.count || 0)}</td>
-                  <td>
-                    <button class="btn secondary" data-action="edit" data-key="${e._keyMs}" style="padding:4px 8px;">Edit</button>
-                    <button class="btn secondary" data-action="delete" data-key="${e._keyMs}" style="padding:4px 8px; margin-left:6px;">Delete</button>
-                  </td>
-                </tr>`;
+              if (editEntryKey === e._keyMs && editEntryDay === dayId) {
+                // Inline edit row
+                return `
+                  <tr data-key="${e._keyMs}">
+                    <td>${hh}:${mm}</td>
+                    <td><input type="text" id="edit-activity" value="${e.activity || ''}" style="width:90%"></td>
+                    <td><input type="number" id="edit-count" min="1" step="1" value="${Number(e.count || 0)}" style="width:70px"></td>
+                    <td>
+                      <button class="btn" data-action="save-edit" data-key="${e._keyMs}" style="padding:4px 8px;">Save</button>
+                      <button class="btn secondary" data-action="cancel-edit" data-key="${e._keyMs}" style="padding:4px 8px; margin-left:6px;">Cancel</button>
+                    </td>
+                  </tr>`;
+              } else {
+                return `
+                  <tr data-key="${e._keyMs}">
+                    <td>${hh}:${mm}</td>
+                    <td>${e.activity || '-'}</td>
+                    <td>${Number(e.count || 0)}</td>
+                    <td>
+                      <button class="btn secondary" data-action="edit" data-key="${e._keyMs}" style="padding:4px 8px;">Edit</button>
+                      <button class="btn secondary" data-action="delete" data-key="${e._keyMs}" style="padding:4px 8px; margin-left:6px;">Delete</button>
+                    </td>
+                  </tr>`;
+              }
             }).join('')
           : `<tr><td colspan="4" class="muted">No entries for ${dayId}.</td></tr>`;
 
@@ -637,9 +701,40 @@
             if (idx < 0) return;
 
             if (action === 'edit') {
-              enterEditMode(entries[idx], dayId);
+              editEntryKey = entries[idx]._keyMs;
+              editEntryDay = dayId;
+              renderToday(uid, dayId);
+            } else if (action === 'cancel-edit') {
+              editEntryKey = null;
+              editEntryDay = null;
+              renderToday(uid, dayId);
+            } else if (action === 'save-edit') {
+              // Save inline edit
+              const tr = btn.closest('tr');
+              const activity = tr.querySelector('#edit-activity')?.value.trim();
+              const count = Number(tr.querySelector('#edit-count')?.value || 0);
+              if (!activity || !Number.isFinite(count) || count < 1) {
+                alert('Please enter a valid activity and count.');
+                return;
+              }
+              entries[idx].activity = activity;
+              entries[idx].count = count;
+              // Save back to Firestore
+              const total = entries.reduce((s, e) => s + Number(e.count || 0), 0);
+              await setDoc(ref, {
+                date: dayId,
+                month: dayId.slice(0,7),
+                total,
+                entries: entries.map(({ _keyMs, ...rest }) => rest), // strip helper
+                updatedAt: serverTimestamp()
+              }, { merge: true });
+              editEntryKey = null;
+              editEntryDay = null;
+              renderToday(uid, dayId);
+              await recomputeAgentKpis(uid, dayId.slice(0,7));
             } else if (action === 'delete') {
-              if (!confirm('Delete this entry?')) return;
+              const confirmed = await showConfirmModal('Delete this entry?');
+              if (!confirmed) return;
               entries.splice(idx, 1);
               const total = entries.reduce((s, e) => s + Number(e.count || 0), 0);
               await setDoc(ref, {
@@ -649,12 +744,40 @@
                 entries: entries.map(({ _keyMs, ...rest }) => rest), // strip helper
                 updatedAt: serverTimestamp()
               }, { merge: true });
-              // If deleting the one being edited, exit edit mode
-              if (editEntryKey === key && editEntryDay === dayId) exitEditMode();
+              if (editEntryKey === key && editEntryDay === dayId) {
+                editEntryKey = null;
+                editEntryDay = null;
+              }
               renderToday(uid, dayId);
-              // NEW: recompute KPIs for that month
               await recomputeAgentKpis(uid, dayId.slice(0,7));
             }
+    // Custom confirm modal styled like the loading overlay
+    function showConfirmModal(message) {
+      return new Promise((resolve) => {
+        let modal = document.getElementById('custom-confirm-modal');
+        if (modal) modal.remove();
+        modal = document.createElement('div');
+        modal.id = 'custom-confirm-modal';
+        modal.innerHTML = `
+          <div style="position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(10,13,24,0.32);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(1.5px);">
+            <div style="background:#181c2a;padding:28px 32px 22px 32px;border-radius:18px;box-shadow:0 4px 32px 0 rgba(0,0,0,0.18);display:flex;align-items:center;gap:16px;min-width:260px;">
+              <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
+                <svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#23263a"/><path d="M16 10v6" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="22" r="1.5" fill="#a78bfa"/></svg>
+              </div>
+              <div style="flex:1;color:#fff;font-size:1.13rem;font-weight:500;">${message}</div>
+              <div style="display:flex;gap:10px;">
+                <button id="confirm-ok" class="btn" style="background:#a78bfa;color:#181c2a;font-weight:600;padding:7px 18px;border-radius:8px;">Delete</button>
+                <button id="confirm-cancel" class="btn secondary" style="background:#23263a;color:#fff;font-weight:500;padding:7px 18px;border-radius:8px;">Cancel</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        const cleanup = () => { modal.remove(); };
+        modal.querySelector('#confirm-ok').onclick = () => { cleanup(); resolve(true); };
+        modal.querySelector('#confirm-cancel').onclick = () => { cleanup(); resolve(false); };
+      });
+    }
           });
         }
       } catch (e) {
@@ -1141,14 +1264,19 @@
         const snap = await getDoc(ref);
         const data = snap.exists() ? snap.data() : {};
         const entries = Array.isArray(data.entries) ? data.entries.slice() : [];
-        // If in edit mode, update the entry, else add new
+        // If in edit mode, replace the entry (remove old, add new), else add new
         if (window.editEntryKey && window.editEntryDay === todayId) {
           const idx = entries.findIndex(e => toMillisAny(e.createdAt ?? e.createdAtMs) === window.editEntryKey);
           if (idx >= 0) {
-            entries[idx].activity = activity;
-            entries[idx].count = count;
-            entries[idx].updatedAt = Date.now();
+            // Remove the old entry
+            entries.splice(idx, 1);
           }
+          // Add the new/edited entry
+          entries.push({
+            activity,
+            count,
+            createdAt: Date.now()
+          });
           window.editEntryKey = null;
           window.editEntryDay = null;
         } else {

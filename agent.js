@@ -118,7 +118,7 @@ function listenMetrics() {
     // Do NOT set per-position target here anymore.
     // Only attendance remains on this doc.
     const attendance = Number(data.attendanceTarget || 0);
-    attendanceTargetEl.textContent = attendance ? `${attendance}%` : '-';
+    if (attendanceTargetEl) attendanceTargetEl.textContent = attendance ? `${attendance}%` : '-';
   });
 }
 
@@ -245,45 +245,49 @@ async function addTask(uid, activity, count, difficulty) {
 }
 
 function initHandlers() {
-  submitBtn.addEventListener('click', async () => {
+  if (submitBtn) submitBtn.addEventListener('click', async () => {
     const activity = activityInput.value.trim();
     const count = Number(countInput.value);
     const difficulty = difficultySelect.value;
     if (!activity || !count || count <= 0 || !difficulty) {
-      submitStatus.textContent = 'Please enter activity, count and difficulty.';
+      if (submitStatus) submitStatus.textContent = 'Please enter activity, count and difficulty.';
       return;
     }
     submitBtn.disabled = true;
-    submitStatus.textContent = 'Saving...';
+    if (submitStatus) submitStatus.textContent = 'Saving...';
     try {
       await addTask(uid, activity, count, difficulty);
-      activityInput.value = '';
-      countInput.value = '';
-      difficultySelect.value = ''; // reset
-      submitStatus.textContent = 'Saved.';
-      setTimeout(() => (submitStatus.textContent = ''), 1200);
+      if (activityInput) activityInput.value = '';
+      if (countInput) countInput.value = '';
+      if (difficultySelect) difficultySelect.value = '';
+      if (submitStatus) {
+        submitStatus.textContent = 'Saved.';
+        setTimeout(() => (submitStatus.textContent = ''), 1200);
+      }
     } catch (e) {
-      submitStatus.textContent = e.message || 'Error saving entry.';
+      if (submitStatus) submitStatus.textContent = e.message || 'Error saving entry.';
     } finally {
       submitBtn.disabled = false;
     }
   });
 
-  logoutBtn.addEventListener('click', async () => {
+  if (logoutBtn) logoutBtn.addEventListener('click', async () => {
     await signOut(auth);
     window.location.href = './index.html';
   });
 
-  monthPicker.addEventListener('change', () => {
+  if (monthPicker) monthPicker.addEventListener('change', () => {
     const val = monthPicker.value; // yyyy-mm
     if (!val || !uid) return;
     listenMonth(uid, val);
   });
 
   // New event listener for processing pasted Excel data
-  document.getElementById('process-data-btn').addEventListener('click', async function() {
+  const processBtn = document.getElementById('process-data-btn');
+  if (processBtn) processBtn.addEventListener('click', async function() {
     const textarea = document.getElementById('excel-paste-area');
     const feedback = document.getElementById('process-feedback');
+    if (!textarea || !feedback) return;
     const rawData = textarea.value.trim();
 
     if (!rawData) {
@@ -348,14 +352,14 @@ onAuthStateChanged(auth, async (user) => {
   let userPosition = '';
   if (snap.exists()) {
     const u = snap.data();
-    welcomeBadge.textContent = `Hello, ${u.name}`;
-    profName.textContent = u.name || '-';
-    profClient.textContent = u.client || '-';
-    profPosition.textContent = u.position || '-';
-    profRole.textContent = u.role || 'agent';
+    if (welcomeBadge) welcomeBadge.textContent = `Hello, ${u.name}`;
+    if (profName) profName.textContent = u.name || '-';
+    if (profClient) profClient.textContent = u.client || '-';
+    if (profPosition) profPosition.textContent = u.position || '-';
+    if (profRole) profRole.textContent = u.role || 'agent';
     userPosition = u.position || '';
   } else {
-    welcomeBadge.textContent = `Hello`;
+    if (welcomeBadge) welcomeBadge.textContent = `Hello`;
   }
 
   listenMetrics();              // attendance

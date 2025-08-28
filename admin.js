@@ -144,10 +144,19 @@ let perfWeights = { task: 50, attendance: 30, attitude: 20 };
 
 // Helper: update the label text in the Overall Performance card
 function updateOverallWeightsLabel() {
-  // Find the label that sits next to the overall percentage value
+  // Update the label next to the overall percentage value (if present)
   const overallLabel = document.querySelector('#mpOverallPct')?.parentElement?.querySelector('.label');
-  if (!overallLabel) return;
-  overallLabel.textContent = `Task ${perfWeights.task}% • Attendance ${perfWeights.attendance}% • Attitude ${perfWeights.attitude}%`;
+  if (overallLabel) {
+    overallLabel.textContent = `Task ${perfWeights.task}% • Attendance ${perfWeights.attendance}% • Attitude ${perfWeights.attitude}%`;
+  }
+
+  // Update the three btn secondary values in the Overall Performance Card
+  const taskWeightEl = document.getElementById('mpTaskWeight');
+  const attendanceWeightEl = document.getElementById('mpAttendanceWeight');
+  const attitudeWeightEl = document.getElementById('mpAttitudeWeight');
+  if (taskWeightEl) taskWeightEl.textContent = perfWeights.task + '%';
+  if (attendanceWeightEl) attendanceWeightEl.textContent = perfWeights.attendance + '%';
+  if (attitudeWeightEl) attitudeWeightEl.textContent = perfWeights.attitude + '%';
 }
 
 const pad = (n) => n.toString().padStart(2, '0');
@@ -184,15 +193,15 @@ function renderGroupedAgents(users) {
     parts.push(`<div class="group-header">${client}</div>`);
     const positions = groups[client];
     Object.keys(positions).sort().forEach(pos => {
-      parts.push(`<div class="muted" style="margin:6px 0 4px 6px;">${pos}</div>`);
       positions[pos]
         .sort((a,b) => (a.name || '').localeCompare(b.name || ''))
         .forEach(agent => {
           parts.push(`
-            <div class="list-item" data-uid="${agent.id}">
+            <div class="list-item" data-agentid="${agent.id}">
               <div>
                 <div style="font-weight:700;">${agent.name || '(no name)'}</div>
                 <div class="meta">${agent.email || ''}</div>
+                <div class="muted" style="margin:2px 0 0 0;">${pos}</div>
               </div>
               <div class="badge">${agent.role || agent.profile?.role || 'agent'}</div>
             </div>
@@ -204,8 +213,8 @@ function renderGroupedAgents(users) {
   agentsList.innerHTML = parts.join('') || '<div class="muted">No agents found.</div>';
   agentsList.querySelectorAll('.list-item').forEach(el => {
     el.addEventListener('click', () => {
-      const uid = el.getAttribute('data-uid');
-      const agent = users.find(u => u.id === uid);
+      const agentid = el.getAttribute('data-agentid');
+      const agent = users.find(u => u.id === agentid);
       if (agent) selectAgent(agent);
     });
   });
@@ -324,10 +333,15 @@ if (!window.updateLeaderboardVisibility) {
 function showAdv() {
   advPanel?.classList.remove('hidden');
   overviewPanel?.classList.add('hidden');
-  weightsPanel?.classList.add('hidden');
+  if (weightsPanel) {
+    weightsPanel.classList.remove('hidden');
+    // Move weightsPanel below advPanel if not already
+    if (advPanel && weightsPanel && advPanel.parentNode === weightsPanel.parentNode) {
+      advPanel.parentNode.insertBefore(weightsPanel, advPanel.nextSibling);
+    }
+  }
   btnToggleAdv?.classList.add('active');
   btnOverview?.classList.remove('active');
-  btnToggleWeights?.classList.remove('active');
   // Ensure the new positions are present when opening Advanced Settings
   ensurePositionInputs();
   window.updateLeaderboardVisibility?.();
@@ -336,10 +350,9 @@ function showAdv() {
 function showOverview() {
   advPanel?.classList.add('hidden');
   overviewPanel?.classList.remove('hidden');
-  weightsPanel?.classList.add('hidden');
+  if (weightsPanel) weightsPanel.classList.add('hidden');
   btnOverview?.classList.add('active');
   btnToggleAdv?.classList.remove('active');
-  btnToggleWeights?.classList.remove('active');
   window.updateLeaderboardVisibility?.();
 }
 
@@ -364,31 +377,6 @@ btnOverview?.addEventListener('click', (e) => {
   e.preventDefault();
   showOverview();
 });
-
-// Ensure a sidebar button for Performance Weights exists
-function ensureWeightsNavButton() {
-  if (btnToggleWeights) return;
-  const nav = btnToggleAdv?.parentElement; // same container as other nav buttons
-  if (!nav) return;
-
-  btnToggleWeights = document.createElement('button');
-  btnToggleWeights.id = 'btnToggleWeights';
-  btnToggleWeights.textContent = 'Performance Weights';
-
-  // SAFE INSERT: only insertBefore if the reference is a child of nav
-  const logout = document.getElementById('btn-logout');
-  if (logout && logout.parentElement === nav) {
-    nav.insertBefore(btnToggleWeights, logout);
-  } else {
-    nav.appendChild(btnToggleWeights);
-  }
-
-  btnToggleWeights.addEventListener('click', (e) => {
-    e.preventDefault();
-    showWeights();
-    weightsPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-}
 
 // Ensure a main panel card exists for weights
 function ensureWeightsPanel() {
@@ -642,12 +630,35 @@ function listenAgentMonth(uid, monthId) {
   unsubAgentMonth = onSnapshot(qy, (snapshot) => {
     const dayTotals = {};
     let total = 0;
+    // Collect all entries for the month
+    let allEntries = [];
     snapshot.forEach(d => {
       const t = Number(d.data().total || 0);
       const id = d.data().date || d.id;
       dayTotals[id] = t;
       total += t;
+      // Each doc may have entries[]
+      const entries = Array.isArray(d.data().entries) ? d.data().entries : [];
+      // Add date to each entry for display
+      entries.forEach(e => allEntries.push({ ...e, date: id }));
     });
+    // Sort by date desc, then time desc
+    allEntries.sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      if (a.time && b.time) return a.time < b.time ? 1 : -1;
+      return 0;
+    });
+    // Render rows for Monthly Entries table
+    const monthTbody = document.getElementById('detailMonthEntries');
+    if (monthTbody) {
+      if (allEntries.length) {
+        monthTbody.innerHTML = allEntries.map(e =>
+          `<tr><td>${e.date || ''}</td><td>${e.time || ''}</td><td>${e.activity || ''}</td><td>${e.count || ''}</td><td>${e.difficulty || ''}</td></tr>`
+        ).join('');
+      } else {
+        monthTbody.innerHTML = '<tr><td colspan="5" class="muted">No entries this month.</td></tr>';
+      }
+    }
     detailTotal.textContent = String(total);
     detailToTarget.textContent = currentMonthTargetForAgent ? Math.max(0, currentMonthTargetForAgent - total) : '-';
     drawDetailChart(dayTotals);
@@ -894,12 +905,13 @@ function buildPerfWeightsUI() {
         updatedAt: serverTimestamp(),
         updatedBy: u.uid
       }, { merge: true });
-      status.textContent = 'Saved.';
-      setTimeout(() => (status.textContent = ''), 1200);
+      // Immediately update local weights and UI for instant feedback
       perfWeights = { task: t, attendance: a, attitude: d };
       updateOverallWeightsLabel();
       computeAndRenderPerformance();
       recomputeTop10();
+      status.textContent = 'Saved.';
+      setTimeout(() => (status.textContent = ''), 1200);
     } catch (e) {
       status.textContent = e.message || 'Error saving.';
     }
@@ -1606,7 +1618,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // Prepare panels and buttons
-  ensureWeightsNavButton();
+  // ensureWeightsNavButton(); // Removed: function not defined
   ensureWeightsPanel();
   // Default to Overview on load
   showOverview();
