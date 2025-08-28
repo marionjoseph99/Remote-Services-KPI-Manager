@@ -987,13 +987,6 @@
     </main>
   </div>
 
-  <!-- Loader overlay -->
-  <div id="appLoader" class="app-loader hidden" role="status" aria-live="polite" aria-label="Loading">
-    <div class="box">
-      <div class="spinner" aria-hidden="true"></div>
-      <div class="label">Loading…</div>
-    </div>
-  </div>
 
   <script type="module" src="./admin.js"></script>
   <!-- Auto-select the first agent to show KPI Detail by default -->
@@ -1100,6 +1093,163 @@
     injectVersionButton();
   </script>
 
+  <!-- Add this script to auto-calculate Task Created averages per agent -->
+  <script type="module">
+  // filepath: c:\Users\USER.DESKTOP-CCLT9HT\OneDrive\Documents\KPI NEW\V3\admin.html
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  // TODO: Replace with your Firebase config
+  const firebaseConfig = {
+    projectId: "your-project-id",
+    apiKey: "your-api-key",
+    authDomain: "your-auth-domain",
+    // ...add all other required config fields from your Firebase project settings...
+  };
+
+  // Initialize Firebase only once
+  let app;
+  if (!window._firebaseApp) {
+    app = initializeApp(firebaseConfig);
+    window._firebaseApp = app;
+  } else {
+    app = window._firebaseApp;
+  }
+  const db = getFirestore(app);
+
+  // Helper to get the selected agent's ID (adjust as needed for your app)
+  function getSelectedAgentId() {
+    // Debug: log all .list-item elements and their data-agentid
+    const allItems = Array.from(document.querySelectorAll('.list-item'));
+    console.log('[TaskBreakdown][DEBUG] .list-item count:', allItems.length);
+    allItems.forEach((el, i) => {
+      console.log(`[TaskBreakdown][DEBUG] .list-item[${i}] data-agentid:`, el.dataset.agentid, 'data-agentId:', el.dataset.agentId, 'classList:', el.className);
+    });
+
+    // Try to get the selected agent
+    let selected = document.querySelector('.list-item.selected');
+    // If none selected, auto-select the first agent
+    if (!selected) {
+      const first = document.querySelector('.list-item');
+      if (first) {
+        first.classList.add('selected');
+        selected = first;
+      }
+    }
+    // Return the agentId (case-insensitive attribute)
+    if (selected) {
+      // Try both data-agentid and data-agent-id for robustness
+      return selected.dataset.agentid || selected.dataset.agentId || null;
+    }
+    return null;
+  }
+
+  // Helper to get the selected month (YYYY-MM)
+  function getSelectedMonth() {
+    const monthInput = document.getElementById('adminMonth');
+    return monthInput ? monthInput.value : null;
+  }
+
+  // Calculate and update averages for Task Created card
+
+
+  function updateTaskCreatedAveragesAndBreakdown() {
+    // Read from Monthly Entries table (tbody#detailMonthEntries)
+    const monthTable = document.getElementById('detailMonthEntries');
+    const tbody = document.getElementById('taskBreakdownBody');
+    if (!monthTable || !tbody) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#bdbdbd;">No data</td></tr>';
+      console.warn('[TaskBreakdown][DEBUG] No monthTable or tbody found');
+      return;
+    }
+    // Gather all rows
+    const rows = Array.from(monthTable.querySelectorAll('tr'));
+    console.log('[TaskBreakdown][DEBUG] Found rows:', rows.length, rows);
+    const activityCounts = {};
+    rows.forEach((tr, idx) => {
+      const tds = tr.querySelectorAll('td');
+      console.log(`[TaskBreakdown][DEBUG] Row ${idx} tds:`, tds.length, tds);
+      if (tds.length >= 4) {
+        let activity = tds[2].textContent.trim().toLowerCase();
+        let count = parseInt(tds[3].textContent.trim(), 10);
+        console.log(`[TaskBreakdown][DEBUG] Row ${idx} activity:`, activity, 'count:', count);
+        if (!activity) activity = 'other';
+        if (!activityCounts[activity]) activityCounts[activity] = 0;
+        activityCounts[activity] += isNaN(count) ? 0 : count;
+      } else {
+        console.warn(`[TaskBreakdown][DEBUG] Row ${idx} skipped, not enough tds`);
+      }
+    });
+    const keys = Object.keys(activityCounts);
+    if (keys.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#bdbdbd;">No data</td></tr>';
+      console.warn('[TaskBreakdown][DEBUG] No activities found');
+    } else {
+      keys.sort((a, b) => activityCounts[b] - activityCounts[a]);
+      tbody.innerHTML = keys.map(name => {
+        const displayName = name.replace(/\b\w/g, c => c.toUpperCase());
+        return `<tr><td>${displayName}</td><td style="text-align:right;">${activityCounts[name]}</td></tr>`;
+      }).join('');
+      console.log('[TaskBreakdown][DEBUG] Rendered breakdown:', activityCounts);
+    }
+    // Optionally, clear averages since we can't compute them from table
+    document.getElementById('mpTaskAvgWeek').textContent = '';
+    document.getElementById('mpTaskAvgMonth').textContent = '';
+  }
+
+  // Listen for agent or month change and update averages
+
+  function setupTaskCreatedAveragesListener() {
+    // Listen for agent selection change
+    document.getElementById('agentsList')?.addEventListener('click', e => {
+      if (e.target.closest('.list-item')) setTimeout(updateTaskCreatedAveragesAndBreakdown, 100);
+    });
+    // Listen for month change
+    document.getElementById('adminMonth')?.addEventListener('change', () => {
+      setTimeout(updateTaskCreatedAveragesAndBreakdown, 100);
+    });
+
+    // Observe #agentsList for population, then select first and update
+    const agentsList = document.getElementById('agentsList');
+    if (agentsList) {
+      const observer = new MutationObserver(() => {
+        const first = agentsList.querySelector('.list-item');
+        if (first) {
+          if (!first.classList.contains('selected')) first.classList.add('selected');
+          updateTaskCreatedAveragesAndBreakdown();
+          observer.disconnect();
+        }
+      });
+      observer.observe(agentsList, { childList: true });
+      // In case already populated
+      const first = agentsList.querySelector('.list-item');
+      if (first) {
+        if (!first.classList.contains('selected')) first.classList.add('selected');
+        updateTaskCreatedAveragesAndBreakdown();
+        observer.disconnect();
+      }
+    }
+
+    // Always attach MutationObserver to #detailMonthEntries, even if not present yet
+    function attachMonthTableObserver() {
+      const monthTable = document.getElementById('detailMonthEntries');
+      if (monthTable && !monthTable._taskBreakdownObserver) {
+        const mo = new MutationObserver(() => {
+          updateTaskCreatedAveragesAndBreakdown();
+        });
+        mo.observe(monthTable, { childList: true, subtree: true });
+        monthTable._taskBreakdownObserver = mo;
+        console.log('[TaskBreakdown][DEBUG] MutationObserver attached to #detailMonthEntries');
+      } else if (!monthTable) {
+        // Try again in 500ms if not present
+        setTimeout(attachMonthTableObserver, 500);
+      }
+    }
+    attachMonthTableObserver();
+  }
+
+  setupTaskCreatedAveragesListener();
+  </script>
 </body>
 </body>
 <script>
