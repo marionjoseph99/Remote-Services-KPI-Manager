@@ -165,20 +165,20 @@ function renderGroupedAgents(users) {
     parts.push(`<div class="group-header">${client}</div>`);
     const positions = groups[client];
     Object.keys(positions).sort().forEach(pos => {
-      const agents = positions[pos]
-        .sort((a,b) => (a.name || '').localeCompare(b.name || ''));
-      agents.forEach((agent) => {
-        parts.push(`
-          <div class="list-item${selectedAgent === agent.id ? ' active' : ''}" data-uid="${agent.id}">
-            <div>
-              <div style="font-weight:700;">${agent.name || '(no name)'}</div>
-              <div class="muted" style="margin:2px 0 0 0;">${pos}</div>
-              <div>${agent.email || ''}</div>
+      parts.push(`<div class="muted" style="margin:6px 0 4px 6px;">${pos}</div>`);
+      positions[pos]
+        .sort((a,b) => (a.name || '').localeCompare(b.name || ''))
+        .forEach(agent => {
+          parts.push(`
+            <div class="list-item" data-uid="${agent.id}">
+              <div>
+                <div style="font-weight:700;">${agent.name || '(no name)'}</div>
+                <div class="meta">${agent.email || ''}</div>
+              </div>
+              <div class="badge">${agent.role || agent.profile?.role || 'agent'}</div>
             </div>
-            <div class="badge">${agent.role || agent.profile?.role || 'agent'}</div>
-          </div>
-        `);
-      });
+          `);
+        });
     });
   });
 
@@ -190,6 +190,7 @@ function renderGroupedAgents(users) {
       if (agent) selectAgent(agent);
     });
   });
+  // After re-render, keep the active highlight in sync
   setActiveAgentListItem();
 }
 

@@ -380,7 +380,6 @@
       background: var(--panel);
       border: 1px solid rgba(255,255,255,0.08);
       box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-      height: 100%; /* make all cards equal height */
     }
     .agent-card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.22); }
     .agent-head {
@@ -642,46 +641,6 @@
       color: #64748b;
       margin-left: 6px;
     }
-
-    /* Custom scrollbar for agent detail and agents list */
-    .card.scrollable {
-      scrollbar-width: thin;
-      scrollbar-color: var(--accent, #a78bfa) rgba(0,0,0,0.08);
-      /* Hide scrollbar by default */
-      overflow-y: auto;
-    }
-    .card.scrollable::-webkit-scrollbar {
-      width: 8px;
-      background: transparent;
-      transition: background 0.2s;
-    }
-    .card.scrollable::-webkit-scrollbar-thumb {
-      background: rgba(167,139,250,0.18);
-      border-radius: 8px;
-      transition: background 0.2s;
-      opacity: 0;
-    }
-    .card.scrollable:hover::-webkit-scrollbar-thumb {
-      background: rgba(167,139,250,0.45);
-      opacity: 1;
-    }
-    .card.scrollable::-webkit-scrollbar-thumb {
-      opacity: 0;
-    }
-    .card.scrollable:hover::-webkit-scrollbar-thumb {
-      opacity: 1;
-    }
-    .card.scrollable::-webkit-scrollbar-corner {
-      background: transparent;
-    }
-    /* Hide scrollbar when not hovered (Firefox) */
-    .card.scrollable {
-      scrollbar-color: transparent transparent;
-    }
-    .card.scrollable:hover {
-      scrollbar-color: var(--accent, #a78bfa) rgba(0,0,0,0.08);
-    }
-
   </style>
 </head>
 <body>
@@ -693,7 +652,7 @@
       </div>
       <div class="nav">
         <a href="#" id="btnOverview" class="active">Overview</a>
-        <button id="btnToggleAdv">Admin Control</button>
+        <button id="btnToggleAdv">Monthly Target Task</button>
         <!-- Only Overview and Advanced Settings nav items remain -->
       </div>
 
@@ -768,12 +727,12 @@
 
         <!-- CHANGE: use 30/70 layout -->
         <div class="grid two ratio-30-70" style="margin-top:16px;">
-          <div class="card scrollable" style="max-height:720px; overflow-y:auto;">
+          <div class="card">
             <h2>Agents by Client & Position</h2>
             <div id="agentsList" class="list" style="margin-top:10px;"></div>
           </div>
 
-          <div class="card scrollable" style="max-height:720px; overflow-y:auto;">
+          <div class="card">
             <h2>Agent KPI Detail</h2>
             <div id="agentMetaRow" style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
               <span class="badge">Name: <strong id="detailName">-</strong></span>
@@ -781,135 +740,56 @@
               <span class="badge">Position: <strong id="detailPosition">-</strong></span>
             </div>
 
-            <!-- KPI Row: Task Progress, Overall Performance, Task Created -->
-            <div id="kpiRow" class="grid three" style="margin-top:12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-              <!-- Overall Performance FIRST -->
-              <div class="card" style="display: flex; flex-direction: column; justify-content: center; min-height: 140px;">
-                <h3 style="margin-bottom: 12px; position: absolute; top: 10px; left: 15px;">Overall Performance</h3>
-                <div style="display: flex; align-items: flex-end; gap: 18px; margin-top: 32px;">
-                  <button class="btn" id="mpOverallBtn" style="font-size: 2.2em; font-weight: 800; height: 100%; min-width: 90px; padding: 12px 18px; border-radius: 12px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 2px 8px rgba(167,139,250,0.18); border: none; outline: none; cursor: default;">
-                    <span id="mpOverallPct">0%</span>
-                  </button>
-                  <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="btn secondary" style="display:flex; align-items:center; gap:8px; font-size:1em; font-weight:600; color:var(--accent); background:rgba(167,139,250,0.10); border:none; cursor:default; padding:7px 16px;">
-                      <span>Task</span>
-                      <span id="mpTaskWeight" style="font-weight:700;">50%</span>
-                    </button>
-                    <button class="btn secondary" style="display:flex; align-items:center; gap:8px; font-size:1em; font-weight:600; color:var(--accent); background:rgba(167,139,250,0.10); border:none; cursor:default; padding:7px 16px;">
-                      <span>Attendance</span>
-                      <span id="mpAttendanceWeight" style="font-weight:700;">30%</span>
-                    </button>
-                    <button class="btn secondary" style="display:flex; align-items:center; gap:8px; font-size:1em; font-weight:600; color:var(--accent); background:rgba(167,139,250,0.10); border:none; cursor:default; padding:7px 16px;">
-                      <span>Attitude</span>
-                      <span id="mpAttitudeWeight" style="font-weight:700;">20%</span>
-                    </button>
-                  </div>
-                </div>
-                <div id="saveKpiStatus" class="muted" style="margin-top:10px;"></div>
-              </div>
-
-              <!-- Combined Task Progress & Created SECOND -->
-              <div class="card" style="display: flex; flex-direction: column; justify-content: center; min-height: 180px; padding: 15px 0 18px 0;">
-                <h3 style="margin-bottom: 18px; margin-left: 15px; font-weight: 700; color: #fff; letter-spacing: 0.01em; text-align: left; align-self: flex-start;">Task Progress</h3>
-                <div style="display: flex; align-items: center; gap: 28px; width: 100%; justify-content: center;">
-                  <div class="circle-progress" id="taskProgress" style="--p: 0; width: 100px; height: 155px; min-width: 155px; min-height: 100px; display: flex; align-items: center; justify-content: center;"></div>
-                  <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 120px;">
-                    <button class="btn" id="mpTaskPctBtn" style="font-size: 2.4em; font-weight: 900; min-width: 110px; padding: 14px 22px; border-radius: 14px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 2px 12px rgba(167,139,250,0.18); border: none; outline: none; cursor: default;">
-                      <span id="mpTaskPct">0%</span>
-                    </button>
-                    <div style="font-size: 1.08em; color: #e0e0e0; font-weight: 600;">
-                      <span id="detailTotal">0</span> / <span id="detailTarget">-</span>
+            <!-- REPLACED: Progress tile in its own card + another card next to it -->
+            <div id="kpiPair" class="grid two" style="margin-top:12px; display: grid; grid-template-columns: 0.7fr 2.2fr; gap: 18px;">
+              <div class="card task-progress-card" style="min-width: 180px; max-width: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h3>Task Progress</h3>
+                <div class="progress-tile" id="taskProgressTile" style="margin-top:8px; width: 100%; display: flex; justify-content: center;">
+                  <div class="circle-progress" id="taskProgress" style="--p: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div class="circle-inner" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                      <div id="taskProgressPct" style="font-size: 1.5em; font-weight: 700;">0%</div>
+                      <div style="font-size: 13px; margin-top: 2px;">This month</div>
+                      <div style="font-size: 13px;">
+                        <span id="detailTotal">0</span> / <span id="detailTarget">-</span>
+                      </div>
+                      <div style="font-size: 12px; color: #a3a3a3;">
+                        Remain: <span id="detailToTarget">-</span>
+                      </div>
                     </div>
-                    <div style="font-size: 1em; color: #bdbdbd;">Remain: <span id="detailToTarget">-</span></div>
-                    <div style="font-size: 0.98em; color: #bdbdbd;" id="mpTaskAvgWeek">Avg/week: -</div>
-                    <div style="font-size: 0.98em; color: #bdbdbd;" id="mpTaskAvgMonth">Avg/month: -</div>
                   </div>
                 </div>
               </div>
 
-              <!-- NEW: Task Breakdown by Activity Name -->
-              <div class="card" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; min-height: 180px; padding: 15px 0 18px 0;">
-                <h3 style="margin-bottom: 5px; margin-left: 15px; font-weight: 700; color: #fff; letter-spacing: 0.01em; text-align: left; align-self: flex-start;">Task Breakdown</h3>
-                <div id="taskBreakdownContainer" style="padding: 0 18px; width: 100%; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; align-items: stretch;">
-                  <table style="width:100%; color:#e0e0e0; font-size:.85em; border-collapse: separate; border-spacing: 0 8px;">
-                    <thead>
-                      <tr><th style="text-align:left;">Activity</th><th style="text-align:right;">Count</th></tr>
-                    </thead>
-                    <tbody id="taskBreakdownBody">
-                      <tr><td colspan="2" style="text-align:center; color:#bdbdbd;">No data</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-                <style>
-                  #taskBreakdownContainer {
-                    scrollbar-width: thin;
-                    scrollbar-color: var(--accent, #a78bfa) rgba(0,0,0,0.08);
-                  }
-                  #taskBreakdownContainer::-webkit-scrollbar {
-                    width: 8px;
-                    background: transparent;
-                    transition: background 0.2s;
-                  }
-                  #taskBreakdownContainer::-webkit-scrollbar-thumb {
-                    background: rgba(167,139,250,0.18);
-                    border-radius: 8px;
-                    transition: background 0.2s;
-                    opacity: 0;
-                  }
-                  #taskBreakdownContainer:hover::-webkit-scrollbar-thumb {
-                    background: rgba(167,139,250,0.45);
-                    opacity: 1;
-                  }
-                  #taskBreakdownContainer::-webkit-scrollbar-thumb {
-                    opacity: 0;
-                  }
-                  #taskBreakdownContainer:hover::-webkit-scrollbar-thumb {
-                    opacity: 1;
-                  }
-                  #taskBreakdownContainer::-webkit-scrollbar-corner {
-                    background: transparent;
-                  }
-                  #taskBreakdownContainer {
-                    scrollbar-color: transparent transparent;
-                  }
-                  #taskBreakdownContainer:hover {
-                    scrollbar-color: var(--accent, #a78bfa) rgba(0,0,0,0.08);
-                  }
-                  #taskBreakdownBody tr {
-                    background: var(--panel, #23263a);
-                    border-radius: 10px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                    transition: background 0.18s;
-                  }
-                  #taskBreakdownBody td {
-                    padding: 5px 15px;
-                    font-weight: 400;
-                    font-size: 0.9em;
-                  }
-                  #taskBreakdownBody tr:not(:last-child) td {
-                    border-bottom: 1px solid rgba(167,139,250,0.08);
-                  }
-                  #taskBreakdownBody tr:hover {
-                    background: rgba(167,139,250,0.10);
-                  }
-                  #taskBreakdownBody td:first-child {
-                    border-radius: 10px 0 0 10px;
-                  }
-                  #taskBreakdownBody td:last-child {
-                    border-radius: 0 10px 10px 0;
-                  }
-                </style>
+              <div class="card" style="min-width: 0; flex: 1 1 0%;">
+                <h3>Summary</h3>
+                <!-- REPLACED: bar chart canvas for monthly daily totals -->
+                <canvas id="summaryBar" style="margin-top:8px;"></canvas>
               </div>
             </div>
 
-            <!-- Summary: full width below KPI row (not scrollable) -->
-            <div class="card" style="margin-top:18px; width:100%; max-height:260px;">
-              <h3>Monthly Task Turnover Summary</h3>
-              <canvas id="summaryBar" style="margin-top:8px; max-height:200px;"></canvas>
-            </div>
-
-            <!-- Monthly Performance (Attendance & Attitude) -->
+            <!-- Monthly Performance -->
             <div class="grid two" style="margin-top:16px;">
+              <!-- Overall first -->
+              <div class="card">
+                <h3>Overall Performance</h3>
+                <div class="kpi">
+                  <div class="value" id="mpOverallPct">0%</div>
+                  <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
+                </div>
+                <button id="btnSaveKpi" class="btn" style="margin-top:10px;">Save KPI Scores</button>
+                <div id="saveKpiStatus" class="muted" style="margin-top:6px;"></div>
+              </div>
+
+              <!-- Task Created next -->
+              <div class="card">
+                <h3>Task Created</h3>
+                <div class="kpi">
+                  <div class="value" id="mpTaskPct">0%</div>
+                  <div class="label">vs monthly target</div>
+                </div>
+                <div class="muted" id="mpTaskMeta" style="margin-top:6px;">0 / 0</div>
+              </div>
+
               <!-- Attendance -->
               <div class="card">
                 <h3>Attendance</h3>
@@ -921,7 +801,6 @@
                   <label for="inpAttendancePoints">Points (0-100)</label>
                   <input id="inpAttendancePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 95" />
                 </div>
-                
               </div>
 
               <!-- Attitude -->
@@ -935,7 +814,6 @@
                   <label for="inpAttitudePoints">Points (0-100)</label>
                   <input id="inpAttitudePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 90" />
                 </div>
-                <button id="btnSaveKpi" class="btn" style="margin-top:10px; position: absolute; bottom: 10px; right: 10px;">Save KPI Scores</button>
               </div>
             </div>
 
@@ -987,6 +865,13 @@
     </main>
   </div>
 
+  <!-- Loader overlay -->
+  <div id="appLoader" class="app-loader hidden" role="status" aria-live="polite" aria-label="Loading">
+    <div class="box">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="label">Loading…</div>
+    </div>
+  </div>
 
   <script type="module" src="./admin.js"></script>
   <!-- Auto-select the first agent to show KPI Detail by default -->
@@ -1092,215 +977,7 @@
     import { injectVersionButton } from './version-info.js';
     injectVersionButton();
   </script>
-
-  <!-- Add this script to auto-calculate Task Created averages per agent -->
-  <script type="module">
-  // filepath: c:\Users\USER.DESKTOP-CCLT9HT\OneDrive\Documents\KPI NEW\V3\admin.html
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-  // TODO: Replace with your Firebase config
-  const firebaseConfig = {
-    projectId: "your-project-id",
-    apiKey: "your-api-key",
-    authDomain: "your-auth-domain",
-    // ...add all other required config fields from your Firebase project settings...
-  };
-
-  // Initialize Firebase only once
-  let app;
-  if (!window._firebaseApp) {
-    app = initializeApp(firebaseConfig);
-    window._firebaseApp = app;
-  } else {
-    app = window._firebaseApp;
-  }
-  const db = getFirestore(app);
-
-  // Helper to get the selected agent's ID (adjust as needed for your app)
-  function getSelectedAgentId() {
-    // Debug: log all .list-item elements and their data-agentid
-    const allItems = Array.from(document.querySelectorAll('.list-item'));
-    console.log('[TaskBreakdown][DEBUG] .list-item count:', allItems.length);
-    allItems.forEach((el, i) => {
-      console.log(`[TaskBreakdown][DEBUG] .list-item[${i}] data-agentid:`, el.dataset.agentid, 'data-agentId:', el.dataset.agentId, 'classList:', el.className);
-    });
-
-    // Try to get the selected agent
-    let selected = document.querySelector('.list-item.selected');
-    // If none selected, auto-select the first agent
-    if (!selected) {
-      const first = document.querySelector('.list-item');
-      if (first) {
-        first.classList.add('selected');
-        selected = first;
-      }
-    }
-    // Return the agentId (case-insensitive attribute)
-    if (selected) {
-      // Try both data-agentid and data-agent-id for robustness
-      return selected.dataset.agentid || selected.dataset.agentId || null;
-    }
-    return null;
-  }
-
-  // Helper to get the selected month (YYYY-MM)
-  function getSelectedMonth() {
-    const monthInput = document.getElementById('adminMonth');
-    return monthInput ? monthInput.value : null;
-  }
-
-  // Calculate and update averages for Task Created card
-
-
-  function updateTaskCreatedAveragesAndBreakdown() {
-    // Read from Monthly Entries table (tbody#detailMonthEntries)
-    const monthTable = document.getElementById('detailMonthEntries');
-    const tbody = document.getElementById('taskBreakdownBody');
-    if (!monthTable || !tbody) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#bdbdbd;">No data</td></tr>';
-      console.warn('[TaskBreakdown][DEBUG] No monthTable or tbody found');
-      return;
-    }
-    // Gather all rows
-    const rows = Array.from(monthTable.querySelectorAll('tr'));
-    console.log('[TaskBreakdown][DEBUG] Found rows:', rows.length, rows);
-    const activityCounts = {};
-    rows.forEach((tr, idx) => {
-      const tds = tr.querySelectorAll('td');
-      console.log(`[TaskBreakdown][DEBUG] Row ${idx} tds:`, tds.length, tds);
-      if (tds.length >= 4) {
-        let activity = tds[2].textContent.trim().toLowerCase();
-        let count = parseInt(tds[3].textContent.trim(), 10);
-        console.log(`[TaskBreakdown][DEBUG] Row ${idx} activity:`, activity, 'count:', count);
-        if (!activity) activity = 'other';
-        if (!activityCounts[activity]) activityCounts[activity] = 0;
-        activityCounts[activity] += isNaN(count) ? 0 : count;
-      } else {
-        console.warn(`[TaskBreakdown][DEBUG] Row ${idx} skipped, not enough tds`);
-      }
-    });
-    const keys = Object.keys(activityCounts);
-    if (keys.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#bdbdbd;">No data</td></tr>';
-      console.warn('[TaskBreakdown][DEBUG] No activities found');
-    } else {
-      keys.sort((a, b) => activityCounts[b] - activityCounts[a]);
-      tbody.innerHTML = keys.map(name => {
-        const displayName = name.replace(/\b\w/g, c => c.toUpperCase());
-        return `<tr><td>${displayName}</td><td style="text-align:right;">${activityCounts[name]}</td></tr>`;
-      }).join('');
-      console.log('[TaskBreakdown][DEBUG] Rendered breakdown:', activityCounts);
-    }
-    // Optionally, clear averages since we can't compute them from table
-    document.getElementById('mpTaskAvgWeek').textContent = '';
-    document.getElementById('mpTaskAvgMonth').textContent = '';
-  }
-
-  // Listen for agent or month change and update averages
-
-  function setupTaskCreatedAveragesListener() {
-    // Listen for agent selection change
-    document.getElementById('agentsList')?.addEventListener('click', e => {
-      if (e.target.closest('.list-item')) setTimeout(updateTaskCreatedAveragesAndBreakdown, 100);
-    });
-    // Listen for month change
-    document.getElementById('adminMonth')?.addEventListener('change', () => {
-      setTimeout(updateTaskCreatedAveragesAndBreakdown, 100);
-    });
-
-    // Observe #agentsList for population, then select first and update
-    const agentsList = document.getElementById('agentsList');
-    if (agentsList) {
-      const observer = new MutationObserver(() => {
-        const first = agentsList.querySelector('.list-item');
-        if (first) {
-          if (!first.classList.contains('selected')) first.classList.add('selected');
-          updateTaskCreatedAveragesAndBreakdown();
-          observer.disconnect();
-        }
-      });
-      observer.observe(agentsList, { childList: true });
-      // In case already populated
-      const first = agentsList.querySelector('.list-item');
-      if (first) {
-        if (!first.classList.contains('selected')) first.classList.add('selected');
-        updateTaskCreatedAveragesAndBreakdown();
-        observer.disconnect();
-      }
-    }
-
-    // Always attach MutationObserver to #detailMonthEntries, even if not present yet
-    function attachMonthTableObserver() {
-      const monthTable = document.getElementById('detailMonthEntries');
-      if (monthTable && !monthTable._taskBreakdownObserver) {
-        const mo = new MutationObserver(() => {
-          updateTaskCreatedAveragesAndBreakdown();
-        });
-        mo.observe(monthTable, { childList: true, subtree: true });
-        monthTable._taskBreakdownObserver = mo;
-        console.log('[TaskBreakdown][DEBUG] MutationObserver attached to #detailMonthEntries');
-      } else if (!monthTable) {
-        // Try again in 500ms if not present
-        setTimeout(attachMonthTableObserver, 500);
-      }
-    }
-    attachMonthTableObserver();
-  }
-
-  setupTaskCreatedAveragesListener();
-  </script>
 </body>
-</body>
-<script>
-// Ensure weightsPanel is always below advPanel after both exist
-function moveWeightsPanelBelowAdvPanel() {
-  var adv = document.getElementById('advPanel');
-  var weights = document.getElementById('weightsPanel');
-  if (adv && weights && adv.parentNode === weights.parentNode) {
-    adv.parentNode.insertBefore(weights, adv.nextSibling);
-  }
-}
-// Try immediately and also on DOM changes
-moveWeightsPanelBelowAdvPanel();
-var obs = new MutationObserver(moveWeightsPanelBelowAdvPanel);
-obs.observe(document.body, { childList: true, subtree: true });
-</script>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
-</html>
 </html>
 </html>
 </html>
