@@ -184,7 +184,6 @@ function renderGroupedAgents(users) {
     parts.push(`<div class="group-header">${client}</div>`);
     const positions = groups[client];
     Object.keys(positions).sort().forEach(pos => {
-      parts.push(`<div class="muted" style="margin:6px 0 4px 6px;">${pos}</div>`);
       positions[pos]
         .sort((a,b) => (a.name || '').localeCompare(b.name || ''))
         .forEach(agent => {
@@ -192,6 +191,7 @@ function renderGroupedAgents(users) {
             <div class="list-item" data-uid="${agent.id}">
               <div>
                 <div style="font-weight:700;">${agent.name || '(no name)'}</div>
+                <div class="meta" style="font-size:12px; color:#888;">${agent.position || pos || 'Unknown'}</div>
                 <div class="meta">${agent.email || ''}</div>
               </div>
               <div class="badge">${agent.role || agent.profile?.role || 'agent'}</div>
@@ -366,29 +366,7 @@ btnOverview?.addEventListener('click', (e) => {
 });
 
 // Ensure a sidebar button for Performance Weights exists
-function ensureWeightsNavButton() {
-  if (btnToggleWeights) return;
-  const nav = btnToggleAdv?.parentElement; // same container as other nav buttons
-  if (!nav) return;
-
-  btnToggleWeights = document.createElement('button');
-  btnToggleWeights.id = 'btnToggleWeights';
-  btnToggleWeights.textContent = 'Performance Weights';
-
-  // SAFE INSERT: only insertBefore if the reference is a child of nav
-  const logout = document.getElementById('btn-logout');
-  if (logout && logout.parentElement === nav) {
-    nav.insertBefore(btnToggleWeights, logout);
-  } else {
-    nav.appendChild(btnToggleWeights);
-  }
-
-  btnToggleWeights.addEventListener('click', (e) => {
-    e.preventDefault();
-    showWeights();
-    weightsPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-}
+// Performance Weights button removed from sidebar; now combined in Advanced Settings
 
 // Ensure a main panel card exists for weights
 function ensureWeightsPanel() {
@@ -490,6 +468,63 @@ function ensureAttendanceInputs() {
   inpWorkDays?.addEventListener('input', computeAndRenderPerformance);
   inpWorkedDays?.addEventListener('input', computeAndRenderPerformance);
   inpLateMinutes?.addEventListener('input', computeAndRenderPerformance);
+
+  // Move Save KPI button and status to Attitude card if not already there
+  const attPct = document.getElementById('mpAttitudePct');
+  const attCard = attPct?.closest('.card') || document.getElementById('attitudeCard') || attPct?.parentElement;
+  const btn = document.getElementById('btnSaveKpi');
+  const status = document.getElementById('saveKpiStatus');
+  if (attCard && btn && btn.parentElement !== attCard) {
+    attCard.appendChild(btn);
+    if (status) attCard.appendChild(status);
+  }
+  // Rebind event handler if not already set
+  if (btn && !btn._kpiHandlerBound) {
+    btn.addEventListener('click', async () => {
+      if (!selectedAgent) return;
+      const monthId = adminMonth.value;
+      inpWorkDays = document.getElementById('inpWorkDays');
+      inpWorkedDays = document.getElementById('inpWorkedDays');
+      inpLateMinutes = document.getElementById('inpLateMinutes');
+      const workingDays = Math.max(0, Math.floor(Number(inpWorkDays?.value || 0)));
+      const workedDays = Math.max(0, Math.floor(Number(inpWorkedDays?.value || 0)));
+      const lateMinutes = Math.max(0, Math.floor(Number(inpLateMinutes?.value || 0)));
+      const attitudePoints = Math.max(0, Math.min(100, Number(inpAttitudePoints?.value || 0)));
+
+      if (workedDays > workingDays) {
+        if (status) {
+          status.textContent = 'Worked days cannot exceed working days.';
+          setTimeout(() => (status.textContent = ''), 1500);
+        }
+        return;
+      }
+
+      btn.disabled = true;
+      if (status) status.textContent = 'Saving...';
+      try {
+        const ok = await requireAdmin(auth.currentUser);
+        if (!ok) throw new Error('Not authorized');
+        await setDoc(doc(db, 'users', selectedAgent, 'kpi', monthId), {
+          workingDays,
+          workedDays,
+          lateMinutes,
+          attitudePoints,
+          updatedAt: serverTimestamp(),
+          updatedBy: auth.currentUser?.uid || null
+        }, { merge: true });
+        if (status) {
+          status.textContent = 'Saved.';
+          setTimeout(() => (status.textContent = ''), 1200);
+        }
+        recomputeTop10();
+      } catch (e) {
+        if (status) status.textContent = e.message || 'Error saving.';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    btn._kpiHandlerBound = true;
+  }
 }
 
 // Select agent and wire listeners
@@ -831,17 +866,16 @@ function initHandlers() {
 
 // Helper: inject Performance Weights section into Advanced Settings panel
 function buildPerfWeightsUI() {
-  ensureWeightsPanel();
-  if (!weightsPanel) return;
-
+  if (!advPanel) return;
   // Avoid duplicates
   if (document.getElementById('weightsSection')) return;
 
   const section = document.createElement('div');
   section.id = 'weightsSection';
   section.className = 'section';
-  section.style.marginTop = '8px';
+  section.style.marginTop = '24px';
   section.innerHTML = `
+    <h3>Performance Weights</h3>
     <p class="muted">Tune how the overall performance is computed. Sum must equal 100.</p>
     <div class="grid two" style="margin-top:10px;">
       <div class="input">
@@ -860,7 +894,7 @@ function buildPerfWeightsUI() {
     <button id="btnSaveWeights" class="btn" style="margin-top:12px;">Save Weights</button>
     <div id="saveWeightsStatus" class="muted" style="margin-top:8px;"></div>
   `;
-  weightsPanel.appendChild(section);
+  advPanel.appendChild(section);
 
   // Prefill from current weights
   const inpTask = document.getElementById('inpWeightTask');
@@ -1606,7 +1640,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // Prepare panels and buttons
-  ensureWeightsNavButton();
   ensureWeightsPanel();
   // Default to Overview on load
   showOverview();
