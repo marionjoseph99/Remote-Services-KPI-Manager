@@ -214,22 +214,25 @@
     /* Do NOT let Task Progress card stretch with the Summary card */
     .task-progress-card { align-self: start; height: auto; }
 
-    /* NEW: keep Task Progress and Summary same fixed height */
-    #kpiPair > .card {
-      align-self: start;         /* avoid grid stretch */
-      height: 240px;             /* fixed, equal height */
-      overflow: hidden;          /* prevent expansion */
-      display: flex;               /* NEW: allow child (canvas) to flex-fill */
+    /* NEW: keep Task Progress, Overall, Task Created, and Summary same fixed height */
+    #kpiPair > .card,
+    .summary-fixed-height {
+      align-self: start;
+      height: 240px;
+      overflow: hidden;
+      display: flex;
       flex-direction: column;
     }
-    #kpiPair > .card h3 { margin-bottom: 8px; }
+    #kpiPair > .card h3,
+    .summary-fixed-height h3 { margin-bottom: 8px; }
     /* Summary canvas height clamp */
-    #kpiPair #summaryBar {
+    #kpiPair #summaryBar,
+    .summary-fixed-height #summaryBar {
       flex: 1 1 auto;
-      height: auto !important;     /* override previous clamp */
-      max-height: none !important; /* override previous clamp */
+      height: auto !important;
+      max-height: none !important;
       width: 100% !important;
-      min-height: 0;               /* avoid overflow issues in flex containers */
+      min-height: 0;
       display: block;
     }
     /* On narrow screens, let them size naturally when stacked */
@@ -704,7 +707,7 @@
           <div class="muted">Month: <span id="top10Month"></span></div>
 
           <!-- Collapsible content wrapper -->
-          <div id="top10Collapsible" class="collapsible-container collapsed">
+          <div id="top10Collapsible" class="collapsible-container">
             <div id="top10Grid" class="top10-grid"></div>
             <!-- Keep old table but hide -->
             <table class="table top10 top10-table-hidden" style="margin-top:8px;">
@@ -741,8 +744,43 @@
             </div>
 
             <!-- REPLACED: Progress tile in its own card + another card next to it -->
-            <div id="kpiPair" class="grid two" style="margin-top:12px; display: grid; grid-template-columns: 0.7fr 2.2fr; gap: 18px;">
-              <div class="card task-progress-card" style="min-width: 180px; max-width: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <div id="kpiPairRow" class="grid" style="margin-top:12px; display: grid; grid-template-columns: 5fr 2fr 3fr; gap: 18px; width: 100%;">
+              <!-- Overall Performance (50%) -->
+              <div class="card" style="height: 240px; display: flex; flex-direction: column; position: relative; min-width: 180px; max-width: none;">
+                <h2 style="margin: 0 0 8px 0;">Overall Performance</h2>
+                <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+                  <div style="font-size: 2.8em; font-weight: 800; color: #a78bfa; line-height: 1;" id="mpOverallPct">0%</div>
+                  <button id="btnSaveKpi" class="btn" style="margin-bottom: 6px;">Save</button>
+                </div>
+                <!-- Progress bar -->
+                <div style="margin: 18px 0 0 0; width: 100%;">
+                  <div style="height: 12px; background: #23263a; border-radius: 8px; overflow: hidden;">
+                    <div id="mpOverallBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #a78bfa, #6366f1); border-radius: 8px; transition: width 1.2s cubic-bezier(.4,0,.2,1);"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; color: #a3a3a3; margin-top: 4px;">
+                    <span>0%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+                <!-- KPI breakdown -->
+                <div style="margin-top: 18px; display: flex; gap: 18px; font-size: 1em;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background: #6366f1;"></span>
+                    <span>Task <span style="font-weight:600;">50%</span></span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background: #22c55e;"></span>
+                    <span>Attendance <span style="font-weight:600;">30%</span></span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background: #fbbf24;"></span>
+                    <span>Attitude <span style="font-weight:600;">20%</span></span>
+                  </div>
+                </div>
+                <div id="saveKpiStatus" class="muted" style="margin-top:10px;"></div>
+              </div>
+              <!-- Task Progress (20%) -->
+              <div class="card task-progress-card" style="height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px; max-width: none;">
                 <h3>Task Progress</h3>
                 <div class="progress-tile" id="taskProgressTile" style="margin-top:8px; width: 100%; display: flex; justify-content: center;">
                   <div class="circle-progress" id="taskProgress" style="--p: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
@@ -759,60 +797,60 @@
                   </div>
                 </div>
               </div>
-
-              <div class="card" style="min-width: 0; flex: 1 1 0%;">
-                <h3>Summary</h3>
-                <!-- REPLACED: bar chart canvas for monthly daily totals -->
-                <canvas id="summaryBar" style="margin-top:8px;"></canvas>
+              <!-- Task Count Per Activity (30%) -->
+              <div class="card" style="height: 240px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; background: repeating-linear-gradient(135deg, #22223b 0 10px, #23263a 10px 20px); min-width: 140px; max-width: none;">
+                <h3>Task Count Per Activity</h3>
+                <div style="width: 100%; max-height: 180px; overflow-y: auto; box-sizing: border-box;">
+                  <table style="width: 100%; color: #e5e7eb; font-size: 1em; border-collapse: collapse; table-layout: fixed; word-break: break-word;">
+                    <thead>
+                      <tr style="color: #a78bfa;">
+                        <th style="text-align:left; padding: 4px 8px; width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Activity</th>
+                        <th style="text-align:right; padding: 4px 8px; width: 40%;">Task Count</th>
+                      </tr>
+                    </thead>
+                    <tbody id="activityTaskCounts">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
             <!-- Monthly Performance -->
-            <div class="grid two" style="margin-top:16px;">
-              <!-- Overall first -->
-              <div class="card">
-                <h3>Overall Performance</h3>
-                <div class="kpi">
-                  <div class="value" id="mpOverallPct">0%</div>
-                  <div class="label">Task 50% • Attendance 30% • Attitude 20%</div>
-                </div>
-                <button id="btnSaveKpi" class="btn" style="margin-top:10px;">Save KPI Scores</button>
-                <div id="saveKpiStatus" class="muted" style="margin-top:6px;"></div>
-              </div>
 
-              <!-- Task Created next -->
-              <div class="card">
-                <h3>Task Created</h3>
-                <div class="kpi">
-                  <div class="value" id="mpTaskPct">0%</div>
-                  <div class="label">vs monthly target</div>
-                </div>
-                <div class="muted" id="mpTaskMeta" style="margin-top:6px;">0 / 0</div>
-              </div>
 
-              <!-- Attendance -->
-              <div class="card">
-                <h3>Attendance</h3>
-                <div class="kpi">
-                  <div class="value" id="mpAttendancePct">0%</div>
-                  <div class="label">from points</div>
-                </div>
-                <div class="input" style="margin-top:8px;">
-                  <label for="inpAttendancePoints">Points (0-100)</label>
-                  <input id="inpAttendancePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 95" />
-                </div>
+            <!-- Monthly Performance -->
+            <div style="margin-top:16px; display: flex; flex-direction: column; gap: 16px;">
+              <!-- Summary card full width -->
+              <div class="card summary-fixed-height" style="width: 100%;">
+                <h3>Summary</h3>
+                <!-- REPLACED: bar chart canvas for monthly daily totals -->
+                <canvas id="summaryBar" style="margin-top:8px;"></canvas>
               </div>
-
-              <!-- Attitude -->
-              <div class="card">
-                <h3>Attitude</h3>
-                <div class="kpi">
-                  <div class="value" id="mpAttitudePct">0%</div>
-                  <div class="label">from points</div>
+              <!-- Attendance below Summary -->
+              <div class="grid two" style="gap: 16px;">
+                <div class="card">
+                  <h3>Attendance</h3>
+                  <div class="kpi">
+                    <div class="value" id="mpAttendancePct">0%</div>
+                    <div class="label">from points</div>
+                  </div>
+                  <div class="input" style="margin-top:8px;">
+                    <label for="inpAttendancePoints">Points (0-100)</label>
+                    <input id="inpAttendancePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 95" />
+                  </div>
                 </div>
-                <div class="input" style="margin-top:8px;">
-                  <label for="inpAttitudePoints">Points (0-100)</label>
-                  <input id="inpAttitudePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 90" />
+                <!-- Attitude -->
+                <div class="card">
+                  <h3>Attitude</h3>
+                  <div class="kpi">
+                    <div class="value" id="mpAttitudePct">0%</div>
+                    <div class="label">from points</div>
+                  </div>
+                  <div class="input" style="margin-top:8px;">
+                    <label for="inpAttitudePoints">Points (0-100)</label>
+                    <input id="inpAttitudePoints" type="number" min="0" max="100" step="1" placeholder="e.g., 90" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -874,6 +912,38 @@
   </div>
 
   <script type="module" src="./admin.js"></script>
+  <script>
+    // Animate the Overall Performance bar when the value changes
+    function animateOverallBar(targetPct) {
+      var bar = document.getElementById('mpOverallBar');
+      if (!bar) return;
+      bar.style.width = '0%';
+      setTimeout(function() {
+        bar.style.width = targetPct + '%';
+      }, 80);
+    }
+    // Listen for changes to the overall percentage and animate
+    function observeOverallPct() {
+      var pctElem = document.getElementById('mpOverallPct');
+      if (!pctElem) return;
+      var lastValue = null;
+      function updateBar() {
+        var val = pctElem.textContent.trim().replace('%','');
+        var pct = parseFloat(val);
+        if (!isNaN(pct) && pct !== lastValue) {
+          animateOverallBar(pct);
+          lastValue = pct;
+        }
+      }
+      // Initial run
+      updateBar();
+      // Observe changes
+      var obs = new MutationObserver(updateBar);
+      obs.observe(pctElem, { childList: true, characterData: true, subtree: true });
+    }
+    // Run on DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', observeOverallPct);
+  </script>
   <!-- Auto-select the first agent to show KPI Detail by default -->
   <script>
     (function () {
@@ -897,60 +967,6 @@
       // Observe for async population
       obs = new MutationObserver(selectFirst);
       obs.observe(list, { childList: true });
-    })();
-  </script>
-
-  <!-- Smooth slide animation for Top 10 Agents collapsible -->
-  <script>
-    (function() {
-      const btn = document.getElementById('btnTop10Collapse');
-      const container = document.getElementById('top10Collapsible');
-      if (!btn || !container) return;
-
-      // Helper to set max-height for smooth transition
-      function setMaxHeight(expand) {
-        if (expand) {
-          container.classList.remove('collapsed');
-          container.style.maxHeight = container.scrollHeight + 'px';
-          container.style.opacity = '1';
-        } else {
-          container.style.maxHeight = container.scrollHeight + 'px';
-          void container.offsetHeight;
-          container.classList.add('collapsed');
-          container.style.maxHeight = '0px';
-          container.style.opacity = '0';
-        }
-      }
-
-      // Initial state: collapsed
-      btn.setAttribute('aria-expanded', 'false');
-      setMaxHeight(false);
-
-      function toggleCollapse(e) {
-        e?.preventDefault();
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', String(!expanded));
-        setMaxHeight(!expanded);
-      }
-
-      // Button toggles
-      btn.addEventListener('click', toggleCollapse);
-
-      // Also allow clicking the card header (h2) to toggle
-      const cardHeader = btn.parentElement?.querySelector('h2');
-      if (cardHeader) {
-        cardHeader.style.cursor = 'pointer';
-        cardHeader.addEventListener('click', toggleCollapse);
-      }
-
-      // On transition end, if collapsed, remove max-height for accessibility
-      container.addEventListener('transitionend', function() {
-        if (container.classList.contains('collapsed')) {
-          container.style.maxHeight = '0px';
-        } else {
-          container.style.maxHeight = '';
-        }
-      });
     })();
   </script>
 
