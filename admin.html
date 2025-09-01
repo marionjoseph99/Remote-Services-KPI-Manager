@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root { --font-sans: 'Lexend', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; }
     html, body { font-family: var(--font-sans); }
@@ -644,6 +645,81 @@
       color: #64748b;
       margin-left: 6px;
     }
+
+    /* Custom scrollbar styles for Agents by Client & Position and Agent KPI Detail */
+#agentsList {
+  scrollbar-width: thin;
+  scrollbar-color: #a78bfa #23263a;
+}
+#agentsList::-webkit-scrollbar {
+  width: 10px;
+  background: #23263a;
+  border-radius: 8px;
+}
+#agentsList::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a78bfa 40%, #6366f1 100%);
+  border-radius: 8px;
+  border: 2px solid #23263a;
+}
+#agentsList::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #a78bfa 60%, #6366f1 100%);
+}
+
+/* Agent KPI Detail card scrollbar */
+.grid.two .card[style*="overflow: auto"] {
+  scrollbar-width: thin;
+  scrollbar-color: #a78bfa #23263a;
+}
+.grid.two .card[style*="overflow: auto"]::-webkit-scrollbar {
+  width: 10px;
+  background: #23263a;
+  border-radius: 8px;
+}
+.grid.two .card[style*="overflow: auto"]::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a78bfa 40%, #6366f1 100%);
+  border-radius: 8px;
+  border: 2px solid #23263a;
+}
+.grid.two .card[style*="overflow: auto"]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #a78bfa 60%, #6366f1 100%);
+}
+
+/* Light theme scrollbar overrides */
+:root[data-theme='light'] #agentsList,
+:root[data-theme='light'] .grid.two .card[style*="overflow: auto"] {
+  scrollbar-color: #6366f1 #e5e7eb;
+}
+:root[data-theme='light'] #agentsList::-webkit-scrollbar,
+:root[data-theme='light'] .grid.two .card[style*="overflow: auto"]::-webkit-scrollbar {
+  background: #e5e7eb;
+}
+:root[data-theme='light'] #agentsList::-webkit-scrollbar-thumb,
+:root[data-theme='light'] .grid.two .card[style*="overflow: auto"]::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #6366f1 40%, #a78bfa 100%);
+  border: 2px solid #e5e7eb;
+}
+:root[data-theme='light'] #agentsList::-webkit-scrollbar-thumb:hover,
+:root[data-theme='light'] .grid.two .card[style*="overflow: auto"]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #6366f1 60%, #a78bfa 100%);
+}
+
+.hidden {
+  display: none !important;
+}
+
+#reportDropdown {
+  position: relative;
+  overflow: visible !important;
+  z-index: 100;
+}
+#reportMenu {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  z-index: 200;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
   </style>
 </head>
 <body>
@@ -696,18 +772,16 @@
       <!-- Overview content (shown by default) -->
       <div id="overviewPanel">
         <!-- Top 10 Agents card -->
-        <div class="card">
+        <div class="card" id="top10Card">
           <div style="display:flex; align-items:center; justify-content:space-between;">
-            <h2 style="margin:0;">Top 10 Agents (Overall Performance)</h2>
-            <button id="btnTop10Collapse" aria-expanded="true" aria-controls="top10Collapsible" title="Show/Hide Top 10">
-              <span>Collapse</span>
-              <span class="arrow" style="font-size:18px;">&#9654;</span>
-            </button>
+            <h2 style="margin:0;">Top 10 Agents (Overall Performance)
+              <button id="btnTop10Collapse" aria-expanded="true" style="margin-left:12px;" title="Show/hide Top 10 Agents">
+                <span class="arrow">▶</span>
+              </button>
+            </h2>
           </div>
           <div class="muted">Month: <span id="top10Month"></span></div>
-
-          <!-- Collapsible content wrapper -->
-          <div id="top10Collapsible" class="collapsible-container">
+          <div id="top10Content" class="collapsible-container">
             <div id="top10Grid" class="top10-grid"></div>
             <!-- Keep old table but hide -->
             <table class="table top10 top10-table-hidden" style="margin-top:8px;">
@@ -729,13 +803,13 @@
         </div>
 
         <!-- CHANGE: use 30/70 layout -->
-        <div class="grid two ratio-30-70" style="margin-top:16px;">
+        <div class="grid two ratio-30-70" style="margin-top:16px; height: 0; min-height: 620px; flex: 1 1 0; align-items: stretch;">
           <div class="card">
             <h2>Agents by Client & Position</h2>
-            <div id="agentsList" class="list" style="margin-top:10px;"></div>
+            <div id="agentsList" class="list" style="margin-top:10px; max-height:520px; overflow:auto;"></div>
           </div>
 
-          <div class="card">
+          <div class="card" style="height: 100%; min-height: 0; flex: 1 1 0; overflow: auto; display: flex; flex-direction: column;">
             <h2>Agent KPI Detail</h2>
             <div id="agentMetaRow" style="display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;">
               <span class="badge">Name: <strong id="detailName">-</strong></span>
@@ -803,7 +877,7 @@
                 <div style="width: 100%; max-height: 180px; overflow-y: auto; box-sizing: border-box;">
                   <table style="width: 100%; color: #e5e7eb; font-size: 1em; border-collapse: collapse; table-layout: fixed; word-break: break-word;">
                     <thead>
-                      <tr style="color: #a78bfa;">
+                      <tr style="color: #a78bfa; font-size: 0.9em;">
                         <th style="text-align:left; padding: 4px 8px; width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Activity</th>
                         <th style="text-align:right; padding: 4px 8px; width: 40%;">Task Count</th>
                       </tr>
@@ -860,7 +934,8 @@
               <h3>Daily Entries</h3>
               <input type="date" id="detailDay" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 6px 10px; border-radius: 10px;" />
             </div>
-            <table class="table" style="margin-top:8px;">
+            <!-- Daily Entries table: add id for PDF export -->
+            <table class="table" id="detailEntriesTable" style="margin-top:8px;">
               <thead>
                 <tr><th>Time</th><th>Activity</th><th>Count</th><th>Difficulty</th></tr>
               </thead>
@@ -871,7 +946,8 @@
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
               <h3>Monthly Entries</h3>
             </div>
-            <table class="table" style="margin-top:8px;">
+            <!-- Monthly Entries table: add id for PDF export -->
+            <table class="table" id="detailMonthEntriesTable" style="margin-top:8px;">
               <thead>
                 <tr><th>Date</th><th>Time</th><th>Activity</th><th>Count</th><th>Difficulty</th></tr>
               </thead>
@@ -992,6 +1068,186 @@
   <script type="module">
     import { injectVersionButton } from './version-info.js';
     injectVersionButton();
+  </script>
+  <script>
+    // Top 10 collapse button logic
+    (function() {
+      const btn = document.getElementById('btnTop10Collapse');
+      const content = document.getElementById('top10Content');
+      if (!btn || !content) return;
+      // Restore state
+      let collapsed = localStorage.getItem('top10Collapsed') === '1';
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      content.classList.toggle('collapsed', collapsed);
+      var arrow = btn.querySelector('.arrow');
+      if (arrow) arrow.style.transform = collapsed ? '' : 'rotate(90deg)';
+      btn.addEventListener('click', function() {
+        collapsed = !collapsed;
+        content.classList.toggle('collapsed', collapsed);
+        btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        var arrow = btn.querySelector('.arrow');
+        if (arrow) arrow.style.transform = collapsed ? '' : 'rotate(90deg)';
+        localStorage.setItem('top10Collapsed', collapsed ? '1' : '0');
+      });
+    })();
+  </script>
+  <script>
+    // Count and display agent's tasks per activity for the month
+function updateActivityTaskCounts(monthEntries) {
+  const activityCounts = {};
+  monthEntries.forEach(entry => {
+    const name = entry.activity;
+    const count = Number(entry.count) || 0;
+    if (!activityCounts[name]) activityCounts[name] = 0;
+    activityCounts[name] += count;
+  });
+  const tbody = document.getElementById('activityTaskCounts');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  Object.entries(activityCounts).forEach(([activity, total]) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td colspan="2" style="padding:0; border:none;">
+        <div class="activity-card-row">
+          <span class="activity-name">${activity}</span>
+          <span class="activity-count">${total}</span>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+// Add styles for activity-card-row
+const style = document.createElement('style');
+style.textContent = `
+  .activity-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(167,139,250,0.13);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(167,139,250,0.08);
+    margin: 4px 0;
+    padding: 7px 14px;
+    min-height: 32px;
+  }
+  .activity-card-row .activity-name {
+    font-weight: 400;
+    color: #fff;
+    letter-spacing: 0.1px;
+    font-size: .8em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+  .activity-card-row .activity-count {
+    font-weight: 400;
+    color: #a78bfa;
+    font-size: .85em;
+    margin-left: 18px;
+    text-align: right;
+    min-width: 32px;
+  }
+`;
+document.head.appendChild(style);
+  </script>
+  <script>
+    // Utility: Copy daily entries to monthly entries and update activity counts
+function syncDailyToMonthlyAndCount() {
+  const dailyRows = document.querySelectorAll('#detailEntries tr');
+  const monthTbody = document.getElementById('detailMonthEntries');
+  if (!monthTbody) return;
+  monthTbody.innerHTML = '';
+  const monthEntries = [];
+  dailyRows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length < 4) return;
+    // Extract values
+    const time = cells[0].textContent.trim();
+    const activity = cells[1].textContent.trim();
+    const count = cells[2].textContent.trim();
+    const difficulty = cells[3].textContent.trim();
+    // Add to Monthly Entries table
+    const monthRow = document.createElement('tr');
+    monthRow.innerHTML = `<td></td><td>${time}</td><td>${activity}</td><td>${count}</td><td>${difficulty}</td>`;
+    monthTbody.appendChild(monthRow);
+    // Add to array for counting
+    monthEntries.push({ activity, count });
+  });
+  updateActivityTaskCounts(monthEntries);
+}
+// Call this after daily entries are rendered/updated
+// syncDailyToMonthlyAndCount();
+  </script>
+  <!-- Automatically sync daily to monthly and count when daily entries change -->
+  <script>
+  (function() {
+    const dailyTbody = document.getElementById('detailEntries');
+    if (!dailyTbody) return;
+    // Initial sync
+    syncDailyToMonthlyAndCount();
+    // Observe for changes
+    const obs = new MutationObserver(syncDailyToMonthlyAndCount);
+    obs.observe(dailyTbody, { childList: true, subtree: true });
+  })();
+  </script>
+  <script>
+    // Report dropdown logic and PDF generation
+    (function() {
+      const btnReports = document.getElementById('btnReports');
+      const reportMenu = document.getElementById('reportMenu');
+      const btnDaily = document.getElementById('optDailyReport');
+      const btnMonthly = document.getElementById('optMonthlyReport');
+      // Toggle dropdown
+      btnReports.addEventListener('click', function(e) {
+        e.stopPropagation();
+        reportMenu.classList.toggle('hidden');
+      });
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!reportMenu.contains(e.target) && e.target !== btnReports) {
+          reportMenu.classList.add('hidden');
+        }
+      });
+      // PDF generation helper
+      function tableToPDF(tableId, title) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text(title, 14, 18);
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        let rows = [];
+        // Get headers
+        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+        rows.push(headers);
+        // Get rows
+        Array.from(table.querySelectorAll('tbody tr')).forEach(tr => {
+          const cells = Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim());
+          rows.push(cells);
+        });
+        // Add table to PDF
+        let startY = 28;
+        rows.forEach((row, i) => {
+          let y = startY + i * 10;
+          row.forEach((cell, j) => {
+            doc.text(cell, 14 + j * 40, y);
+          });
+        });
+        doc.save(title + '.pdf');
+      }
+      // Daily Report
+      btnDaily.addEventListener('click', function() {
+        tableToPDF('detailEntriesTable', 'Daily_Report');
+        reportMenu.classList.add('hidden');
+      });
+      // Monthly Report
+      btnMonthly.addEventListener('click', function() {
+        tableToPDF('detailMonthEntriesTable', 'Monthly_Report');
+        reportMenu.classList.add('hidden');
+      });
+    })();
   </script>
 </body>
 </html>
