@@ -747,14 +747,6 @@
           <button class="hamburger" id="toggleSidebar">☰ Menu</button>
           <span class="badge">Admin</span>
           <input type="month" id="adminMonth" style="background: var(--panel); border:1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 10px; border-radius: 10px;" />
-          <!-- NEW: Generate Report dropdown -->
-          <div id="reportDropdown" style="position:relative;">
-            <button id="btnReports" class="btn">Generate Report ▾</button>
-            <div id="reportMenu" class="card hidden" style="position:absolute; right:0; top:36px; z-index:20; padding:6px; min-width:180px;">
-              <button id="optDailyReport" class="btn secondary" style="width:100%;">Daily Report</button>
-              <button id="optMonthlyReport" class="btn secondary" style="width:100%; margin-top:6px;">Monthly Report</button>
-            </div>
-          </div>
         </div>
         <!-- Theme switch toggle in main panel top right -->
         <label class="theme-switch-toggle" title="Toggle light/dark mode">
@@ -1194,63 +1186,228 @@ function syncDailyToMonthlyAndCount() {
   </script>
   <script>
     // Report dropdown logic and PDF generation
-    (function() {
-      const btnReports = document.getElementById('btnReports');
-      const reportMenu = document.getElementById('reportMenu');
-      const btnDaily = document.getElementById('optDailyReport');
-      const btnMonthly = document.getElementById('optMonthlyReport');
-      // Toggle dropdown
-      btnReports.addEventListener('click', function(e) {
-        e.stopPropagation();
-        reportMenu.classList.toggle('hidden');
-      });
-      // Hide dropdown when clicking outside
-      document.addEventListener('click', function(e) {
-        if (!reportMenu.contains(e.target) && e.target !== btnReports) {
-          reportMenu.classList.add('hidden');
-        }
-      });
-      // PDF generation helper
-      function tableToPDF(tableId, title) {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.setFontSize(16);
-        doc.text(title, 14, 18);
-        const table = document.getElementById(tableId);
-        if (!table) return;
-        let rows = [];
-        // Get headers
-        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
-        rows.push(headers);
-        // Get rows
-        Array.from(table.querySelectorAll('tbody tr')).forEach(tr => {
-          const cells = Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim());
-          rows.push(cells);
-        });
-        // Add table to PDF
-        let startY = 28;
-        rows.forEach((row, i) => {
-          let y = startY + i * 10;
-          row.forEach((cell, j) => {
-            doc.text(cell, 14 + j * 40, y);
-          });
-        });
-        doc.save(title + '.pdf');
+    // REMOVED: Obsolete dropdown logic referencing btnReports and reportMenu
+    // PDF generation and report buttons are handled above
+  </script>
+  <script>
+    // PDF generation helper
+    function tableToPDF(tableId, title) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text(title, 14, 18);
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      let rows = [];
+      // Get headers
+      const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+      rows.push(headers);
+      // Get rows
+      const dataRows = Array.from(table.querySelectorAll('tbody tr'));
+      if (dataRows.length === 0) {
+        alert('No data found in the table. Please select an agent or ensure tasks are loaded before exporting.');
+        return;
       }
-      // Daily Report
-      btnDaily.addEventListener('click', function() {
-        tableToPDF('detailEntriesTable', 'Daily_Report');
-        reportMenu.classList.add('hidden');
+      dataRows.forEach(tr => {
+        const cells = Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim());
+        rows.push(cells);
       });
-      // Monthly Report
-      btnMonthly.addEventListener('click', function() {
-        tableToPDF('detailMonthEntriesTable', 'Monthly_Report');
-        reportMenu.classList.add('hidden');
+      // Add table to PDF
+      let startY = 28;
+      rows.forEach((row, i) => {
+        let y = startY + i * 10;
+        row.forEach((cell, j) => {
+          doc.text(cell, 14 + j * 40, y);
+        });
       });
-    })();
+      doc.save(title + '.pdf');
+    }
+    // Attach listeners after DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      var btnMonthly = document.getElementById('optMonthlyReport');
+      if (btnMonthly) {
+        btnMonthly.addEventListener('click', function() {
+          tableToPDF('detailMonthEntriesTable', 'Monthly_Report');
+        });
+      }
+    });
+  </script>
+  <script>
+    // PDF generation for grouped agent tasks by client
+async function exportGroupedReports(type) {
+  const { jsPDF } = window.jspdf;
+  // Get all agents from cache (already grouped by client in admin.js)
+  const agents = window.agentsCache || [];
+  if (!agents.length) {
+    alert('No agents found.');
+    return;
+  }
+  // Group agents by client
+  const clients = {};
+  agents.forEach(agent => {
+    const client = (agent.client || '').trim() || 'Unassigned';
+    if (!clients[client]) clients[client] = [];
+    clients[client].push(agent);
+  });
+  // Get selected day/month
+  const day = document.getElementById('detailDay')?.value;
+  const month = document.getElementById('adminMonth')?.value;
+  // For each client, build a PDF
+  for (const client in clients) {
+    const doc = new jsPDF();
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 60);
+    doc.text(`${type === 'daily' ? 'Daily' : 'Monthly'} Report`, 14, 18);
+    doc.setFontSize(14);
+    doc.text(`Client: ${client}`, 14, 28);
+    let y = 38;
+    for (const agent of clients[client]) {
+      doc.setFontSize(13);
+      doc.setTextColor(99, 102,241); // Accent color
+      doc.text(`Agent: ${agent.name || '-'} (${agent.position || '-'})`, 14, y);
+      y += 8;
+      doc.setFontSize(11);
+      doc.setTextColor(30, 41, 59); // Text color
+      // Fetch tasks for this agent (from Firestore)
+      let tasks = [];
+      if (type === 'daily' && day) {
+        // Daily: get tasks for the selected day
+        try {
+          const snap = await window.db.collection('users').doc(agent.id).collection('tasks').doc(day).get();
+          const data = snap.exists ? snap.data() : {};
+          tasks = Array.isArray(data.entries) ? data.entries : [];
+        } catch {}
+      } else if (type === 'monthly' && month) {
+        // Monthly: get all tasks for the selected month
+        try {
+          const q = window.db.collection('users').doc(agent.id).collection('tasks').where('month', '==', month);
+          const snap = await q.get();
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            if (Array.isArray(data.entries)) tasks = tasks.concat(data.entries);
+          });
+        } catch {}
+      }
+      if (!tasks.length) {
+        doc.text('No tasks found.', 18, y);
+        y += 8;
+        continue;
+      }
+      // Table header
+      doc.setFontSize(11);
+      doc.setTextColor(99, 102, 241);
+      doc.text('Time', 18, y);
+      doc.text('Activity', 48, y);
+      doc.text('Count', 108, y);
+      doc.text('Difficulty', 138, y);
+      y += 6;
+      doc.setTextColor(30, 41, 59);
+      // Table rows
+      tasks.forEach(entry => {
+        const ts = entry.createdAt?.toDate?.() || (entry.createdAt instanceof Date ? entry.createdAt : new Date());
+        const time = ts ? `${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '-';
+        doc.text(time, 18, y);
+        doc.text(String(entry.activity || '-'), 48, y);
+        doc.text(String(entry.count || '-'), 108, y);
+        doc.text(String(entry.difficulty || '-'), 138, y);
+        y += 6;
+        if (y > 280) { doc.addPage(); y = 20; }
+      });
+      y += 4;
+    }
+    // Download PDF
+    doc.save(`${type === 'daily' ? 'Daily' : 'Monthly'}_Report_${client.replace(/\s+/g,'_')}.pdf`);
+  }
+}
+// Attach listeners for grouped export
+document.addEventListener('DOMContentLoaded', function() {
+  var btnMonthly = document.getElementById('optMonthlyReport');
+  if (btnMonthly) {
+    btnMonthly.addEventListener('click', function() {
+      exportGroupedReports('monthly');
+    });
+  }
+});
+  </script>
+  <script>
+    // PDF generation for daily report: all agents, single table
+async function exportAllAgentsDailyReport() {
+  const { jsPDF } = window.jspdf;
+  let agents;
+  try {
+    agents = await waitForAgentsCache();
+  } catch (err) {
+    alert('No agents found. Please wait for agents to load.');
+    return;
+  }
+  const day = document.getElementById('detailDay')?.value;
+  if (!day) {
+    alert('Please select a day.');
+    return;
+  }
+  // Gather all tasks for all agents
+  let allTasks = [];
+  for (const agent of agents) {
+    let tasks = [];
+    try {
+      const snap = await window.db.collection('users').doc(agent.id).collection('tasks').doc(day).get();
+      const data = snap.exists ? snap.data() : {};
+      tasks = Array.isArray(data.entries) ? data.entries : [];
+    } catch {}
+    tasks.forEach(entry => {
+      allTasks.push({
+        time: entry.createdAt?.toDate?.() || (entry.createdAt instanceof Date ? entry.createdAt : new Date()),
+        activity: entry.activity || '-',
+        count: entry.count || '-',
+        difficulty: entry.difficulty || '-',
+        agent: agent.name || '-',
+        position: agent.position || '-',
+        client: agent.client || '-'
+      });
+    });
+  }
+  if (!allTasks.length) {
+    alert('No tasks found for any agent on this day.');
+    return;
+  }
+  const doc = new jsPDF();
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(18);
+  doc.setTextColor(40, 40, 60);
+  doc.text('Daily_Report', 14, 18);
+  doc.setFontSize(13);
+  let y = 28;
+  // Table header
+  doc.setTextColor(30, 41, 59);
+  doc.text('Time', 14, y);
+  doc.text('Activity', 54, y);
+  doc.text('Count', 114, y);
+  doc.text('Difficulty', 144, y);
+  y += 8;
+  // Table rows
+  doc.setFontSize(12);
+  allTasks.forEach(entry => {
+    const ts = entry.time;
+    const time = ts ? `${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '-';
+    doc.text(time, 14, y);
+    doc.text(String(entry.activity), 54, y);
+    doc.text(String(entry.count), 114, y);
+    doc.text(String(entry.difficulty), 144, y);
+    y += 8;
+    if (y > 280) { doc.addPage(); y = 20; }
+  });
+  doc.save('Daily_Report.pdf');
+}
+// Attach listener for daily report button (all agents)
+document.addEventListener('DOMContentLoaded', function() {
+  var btnDaily = document.getElementById('optDailyReport');
+  if (btnDaily) {
+    btnDaily.addEventListener('click', function() {
+      exportAllAgentsDailyReport();
+    });
+  }
+});
   </script>
 </body>
-</html>
-</html>
-</html>
 </html>
